@@ -292,7 +292,7 @@ class Dataset(torch.utils.data.Dataset):
             if not os.path.isfile(inter_feat_path):
                 raise ValueError(f"File {inter_feat_path} not exist.")
 
-            inter_feat = self._load_feat(inter_feat_path, FeatureSource.INTERACTION)
+            inter_feat: pd.DataFrame = self._load_feat(inter_feat_path, FeatureSource.INTERACTION)
             self.logger.debug(
                 f"Interaction feature loaded successfully from [{inter_feat_path}]."
             )
@@ -424,7 +424,7 @@ class Dataset(torch.utils.data.Dataset):
         self.logger.debug(set_color("\t unload_col", "blue") + f": [{unload_col}]")
         return load_col, unload_col
 
-    def _load_feat(self, filepath, source):
+    def _load_feat(self, filepath, source) -> pd.DataFrame:
         """Load features according to source into :class:`pandas.DataFrame`.
 
         Set features' properties, e.g. type, source and length.
@@ -2118,7 +2118,7 @@ class Dataset(torch.utils.data.Dataset):
             raise ValueError(f"Field [{field}] not in preload_weight")
         return self._preloaded_weight[field]
 
-    def _dataframe_to_interaction(self, data):
+    def _dataframe_to_interaction(self, data: pd.DataFrame):
         """Convert :class:`pandas.DataFrame` to :class:`~recbole.data.interaction.Interaction`.
 
         Args:

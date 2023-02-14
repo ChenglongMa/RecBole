@@ -126,12 +126,14 @@ class DIENDataset(SequentialDataset):
                     and field in self.config["numerical_features"]
                 ):
                     shape += (2,)
+                # DIEN
                 list_ftype = self.field2type[list_field]
                 dtype = (
                     torch.int64
                     if list_ftype in [FeatureType.TOKEN, FeatureType.TOKEN_SEQ]
                     else torch.float64
                 )
+                # End DIEN
                 new_dict[list_field] = torch.zeros(shape, dtype=dtype)
 
                 value = self.inter_feat[field]
@@ -149,6 +151,7 @@ class DIENDataset(SequentialDataset):
                         new_dict[self.neg_item_list_field][i][
                             :length
                         ] = self.neg_item_list[index]
+                # End DIEN
 
         new_data.update(Interaction(new_dict))
         self.inter_feat = new_data

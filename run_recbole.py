@@ -8,7 +8,11 @@
 # @Email  : chenyuwuxinn@gmail.com, houyupeng@ruc.edu.cn, zhlin@ruc.edu.cn
 
 import argparse
+import os
+import time
 from ast import arg
+
+import pandas as pd
 
 from recbole.quick_start import run_recbole, run_recboles
 
@@ -45,9 +49,19 @@ if __name__ == "__main__":
     )
 
     if args.nproc == 1 and args.world_size <= 0:
-        run_recbole(
-            model=args.model, dataset=args.dataset, config_file_list=config_file_list
-        )
+        start = time.time()
+        result = run_recbole(model=args.model, dataset=args.dataset, config_file_list=config_file_list)
+        elapse = (time.time() - start) / 60  # unit: s
+
+        res = []
+        for metric, value in result['test_result'].items():
+            res.append([args.model, metric, value, elapse])
+        res = pd.DataFrame(res, columns=['model', 'metric', 'value', 'elapse(mins)'])
+        os.makedirs('./result/', exist_ok=True)
+        now = time.strftime("%y%m%d%H%M%S")
+        res.to_csv(f'./result/result_{now}.csv', index=False)
+        print(res.head())
+
     else:
         if args.world_size == -1:
             args.world_size = args.nproc

@@ -95,7 +95,7 @@ class DIEN(SequentialRecommender):
         ] + self.mlp_hidden_size
 
         # init interest extractor layer, interest evolving layer embedding layer, MLP layer and linear layer
-        self.interset_extractor = InterestExtractorNetwork(
+        self.interest_extractor = InterestExtractorNetwork(
             item_feat_dim, item_feat_dim, self.interest_mlp_list
         )
         self.interest_evolution = InterestEvolvingLayer(
@@ -155,7 +155,7 @@ class DIEN(SequentialRecommender):
         target_item_feat_emb = target_item_feat_emb.squeeze(1)
 
         # interest
-        interest, aux_loss = self.interset_extractor(
+        interest, aux_loss = self.interest_extractor(
             item_feat_list, item_seq_len, neg_item_feat_list
         )
         evolution = self.interest_evolution(

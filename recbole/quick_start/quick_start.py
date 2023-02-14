@@ -77,9 +77,9 @@ def run_recbole(
     model = get_model(config["model"])(config, train_data._dataset).to(config["device"])
     logger.info(model)
 
-    transform = construct_transform(config)
-    flops = get_flops(model, dataset, config["device"], logger, transform)
-    logger.info(set_color("FLOPs", "blue") + f": {flops}")
+    # transform = construct_transform(config)
+    # flops = get_flops(model, dataset, config["device"], logger, transform)
+    # logger.info(set_color("FLOPs", "blue") + f": {flops}")
 
     # trainer loading and initialization
     trainer = get_trainer(config["MODEL_TYPE"], config["model"])(config, model)
