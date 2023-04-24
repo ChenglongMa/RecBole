@@ -725,7 +725,6 @@ class Dataset(torch.utils.data.Dataset):
         dis_info = {}
 
         if self.config["discretization"]:
-
             dis_info = self.config["discretization"]
 
             for field in dis_info.keys():
@@ -1811,7 +1810,9 @@ class Dataset(torch.utils.data.Dataset):
         """Saving this :class:`Dataset` object to :attr:`config['checkpoint_dir']`."""
         save_dir = self.config["checkpoint_dir"]
         ensure_dir(save_dir)
-        file = os.path.join(save_dir, f'{self.config["dataset"]}-dataset.pth')
+        file = os.path.join(
+            save_dir, f'{self.config["dataset"]}-{self.__class__.__name__}.pth'
+        )
         self.logger.info(
             set_color("Saving filtered dataset into ", "pink") + f"[{file}]"
         )
