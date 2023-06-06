@@ -15,3 +15,5 @@ docs/build/
 wandb/*
 /ray_log*
 /result/
+/latex/
+/out/

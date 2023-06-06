@@ -4,6 +4,7 @@
 
 
 import argparse
+import os
 from ast import arg
 
 from recbole.quick_start import run_recbole, run_recboles
@@ -112,6 +113,7 @@ if __name__ == "__main__":
         subset_columns=subset_columns,
     )
 
+    os.makedirs(os.path.dirname(valid_file), exist_ok=True)
     with open(valid_file, "w") as f:
         f.write(tex_valid)
     with open(test_file, "w") as f:

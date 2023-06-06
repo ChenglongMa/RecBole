@@ -15,6 +15,7 @@ from ast import arg
 import pandas as pd
 
 from recbole.quick_start import run_recbole, run_recboles
+from recbole.utils import list_to_latex
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

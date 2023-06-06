@@ -274,6 +274,12 @@ class Dataset(torch.utils.data.Dataset):
         )
         self._load_additional_feat(token, dataset_path)
 
+        # mcl: calculate the diff between the min time and the max time
+        if self.time_field in self.inter_feat.columns:
+            self.time_diff = self.inter_feat[self.time_field].max() - self.inter_feat[self.time_field].min()
+        else:
+            self.time_diff = None
+
     def _load_inter_feat(self, token, dataset_path):
         """Load interaction features.
 

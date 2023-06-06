@@ -406,7 +406,7 @@ def list_to_latex(convert_list, bigger_flag=True, subset_columns=[]):
     column_format = "c" * num_column
     tex = style.hide(axis="index").to_latex(
         caption="Result Table",
-        label="Result Table",
+        label="result_table",
         convert_css=True,
         hrules=True,
         column_format=column_format,
