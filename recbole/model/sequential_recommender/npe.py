@@ -44,10 +44,7 @@ class NPE(SequentialRecommender):
 
         # define layers and loss type
         self.user_embedding = nn.Embedding(self.n_user, self.embedding_size)
-        self.item_embedding = nn.Embedding(self.n_items, self.embedding_size)
-        self.embedding_seq_item = nn.Embedding(
-            self.n_items, self.embedding_size, padding_idx=0
-        )
+        self.item_embedding = nn.Embedding(self.n_items, self.embedding_size, padding_idx=0)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(self.dropout_prob)
 
