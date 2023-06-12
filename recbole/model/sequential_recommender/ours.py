@@ -2,7 +2,7 @@
 # @Time     : 2023/06/05 14:56
 # @Author   : Chenglong Ma
 # @Email    : chenglong.m@outlook.com
-
+import numpy as np
 import torch
 import torch.nn as nn
 from recbole.model.layers import TransformerEncoder
@@ -22,6 +22,7 @@ class Ours(SequentialRecommender):
         # load the dataset information
         self.n_user = dataset.num(self.USER_ID)
         self.device = config["device"]
+        self.TIME_SEQ = dataset.timestamp_list_field
 
         # load the parameters information
         self.n_layers = config["n_layers"]
@@ -35,6 +36,8 @@ class Ours(SequentialRecommender):
         self.hidden_act = config["hidden_act"]
         self.layer_norm_eps = config["layer_norm_eps"]
 
+        self.position_emb_scale = config["position_emb_scale"]
+
         # define layers and loss type
         # self.user_embedding = nn.Embedding(self.n_user, self.embedding_size)
         self.item_embedding = nn.Embedding(self.n_items, self.embedding_size, padding_idx=0)
@@ -43,7 +46,8 @@ class Ours(SequentialRecommender):
         # )
 
         # new layers
-        self.position_embedding = nn.Embedding(self.max_seq_length, self.embedding_size)
+        self.max_position_length = self.position_ids(dataset.time_diff)
+        self.position_embedding = nn.Embedding(self.max_position_length, self.embedding_size)
 
         # self.attention_layer = TransformerEncoderLayer(d_model=self.embedding_size, nhead=8, batch_first=True)
         self.trm_encoder = TransformerEncoder(
@@ -86,17 +90,20 @@ class Ours(SequentialRecommender):
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
 
-    def forward(self, item_seq, user, item_seq_len):
+    def position_ids(self, time_diff):
+        ids = np.ceil(self.position_emb_scale * np.log(time_diff + 1))
+        if isinstance(time_diff, torch.Tensor):
+            return ids.long()
+        return ids.astype(int)
+
+    def forward(self, item_seq, user, item_seq_len, time_seq=None):
         # user_embedding = self.user_embedding(user)
         extended_attention_mask = self.get_attention_mask(item_seq)
 
-        # batch_size * embedding_size
         seq_item_embedding = self.item_embedding(item_seq)
-
-        position_ids = torch.arange(
-            item_seq.size(1), dtype=torch.long, device=item_seq.device
-        )
-        position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
+        time_diffs = (time_seq.max(dim=1, keepdim=True)[0] - time_seq).cpu()
+        position_ids = self.position_ids(time_diffs).to(time_seq.device)
+        position_ids = position_ids.clip(min=0, max=self.max_position_length - 1)
         position_embedding = self.position_embedding(position_ids)
 
         seq_item_embedding = seq_item_embedding + position_embedding
@@ -104,7 +111,6 @@ class Ours(SequentialRecommender):
         seq_item_embedding = self.LayerNorm(seq_item_embedding)
         seq_item_embedding = self.dropout(seq_item_embedding)
 
-        # seq_item_embedding = self.attention_layer(seq_item_embedding)[:, -1, :]
         trm_output = self.trm_encoder(
             seq_item_embedding, extended_attention_mask, output_all_encoded_layers=True
         )
@@ -113,12 +119,17 @@ class Ours(SequentialRecommender):
         return output
         # return user_embedding + output
 
-    def calculate_loss(self, interaction):
+    def get_seq_output(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
         user = interaction[self.USER_ID]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
+        time_seq = interaction[self.TIME_SEQ]
+        seq_output = self.forward(item_seq, user, item_seq_len, time_seq)
+        return seq_output
 
-        seq_output = self.forward(item_seq, user, item_seq_len)
+    def calculate_loss(self, interaction):
+        seq_output = self.get_seq_output(interaction)
+
         pos_items = interaction[self.POS_ITEM_ID]
         if self.loss_type == "BPR":
             pos_items_emb = self.item_embedding(pos_items)
@@ -135,22 +146,14 @@ class Ours(SequentialRecommender):
             return loss
 
     def predict(self, interaction):
-        item_seq = interaction[self.ITEM_SEQ]
-        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+        seq_output = self.get_seq_output(interaction)
         test_item = interaction[self.ITEM_ID]
-        user = interaction[self.USER_ID]
-
-        seq_output = self.forward(item_seq, user, item_seq_len)
         test_item_emb = self.item_embedding(test_item)
         scores = torch.mul(seq_output, test_item_emb).sum(dim=1)
         return scores
 
     def full_sort_predict(self, interaction):
-        item_seq = interaction[self.ITEM_SEQ]
-        user = interaction[self.USER_ID]
-        item_seq_len = interaction[self.ITEM_SEQ_LEN]
-
-        seq_output = self.forward(item_seq, user, item_seq_len)
+        seq_output = self.get_seq_output(interaction)
         test_items_emb = self.item_embedding.weight
         scores = torch.matmul(seq_output, test_items_emb.transpose(0, 1))
         return scores
