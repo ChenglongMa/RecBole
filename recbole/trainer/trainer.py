@@ -18,11 +18,13 @@ recbole.trainer.trainer
 """
 
 import os
+from collections import defaultdict
 
 from logging import getLogger
-from time import time
+from time import time, strftime
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.optim as optim
 from torch.nn.utils.clip_grad import clip_grad_norm_
@@ -609,9 +611,32 @@ class Trainer(AbstractTrainer):
         )
 
         num_sample = 0
+        # mcl: added
+        topk = max(self.config["topk"])
+        topk_results = defaultdict(list)
+        eval_dataset = eval_data.dataset
+        dataset_name = eval_dataset.dataset_name
+        uid_field, iid_field, score_field = eval_dataset.uid_field, eval_dataset.iid_field, 'score'
+        phase = eval_data._sampler.phase
+        # end of mcl
+
         for batch_idx, batched_data in enumerate(iter_data):
             num_sample += len(batched_data)
             interaction, scores, positive_u, positive_i = eval_func(batched_data)
+
+            # mcl: added
+            if phase == 'test':
+                topk_scores, topk_idx = torch.topk(
+                    scores, topk, dim=-1
+                )  # n_users x k
+                user_ids, indices = np.unique(interaction[uid_field], return_index=True)
+                user_ids = user_ids[indices.argsort()].repeat(topk)
+
+                topk_results[uid_field] += user_ids.tolist()
+                topk_results[iid_field] += topk_idx.cpu().detach().flatten().tolist()
+                topk_results[score_field] += topk_scores.cpu().detach().flatten().tolist()
+            # end of mcl
+
             if self.gpu_available and show_progress:
                 iter_data.set_postfix_str(
                     set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
@@ -619,6 +644,17 @@ class Trainer(AbstractTrainer):
             self.eval_collector.eval_batch_collect(
                 scores, interaction, positive_u, positive_i
             )
+
+        # mcl: add topk result
+        if phase == 'test':
+            topk_results[uid_field] = eval_dataset.id2token(eval_dataset.uid_field, topk_results[uid_field])
+            topk_results[iid_field] = eval_dataset.id2token(eval_dataset.iid_field, topk_results[iid_field])
+            topk_results = pd.DataFrame(topk_results)
+            now = strftime("%y%m%d%H%M%S")
+            filename = os.path.join(self.config['result_dir'], f'topk_{self.config["model"]}_{dataset_name}_{now}.csv')
+            topk_results.to_csv(filename, index=False)
+        # mcl: add topk result
+
         self.eval_collector.model_collect(self.model)
         struct = self.eval_collector.get_data_struct()
         result = self.evaluator.evaluate(struct)
