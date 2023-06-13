@@ -26,7 +26,7 @@ def run(args, model, config_file_list):
         res = mp.spawn(
             run_recboles,
             args=(
-                args.model,
+                model,
                 args.dataset,
                 config_file_list,
                 args.ip,
