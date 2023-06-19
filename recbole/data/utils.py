@@ -44,7 +44,7 @@ def create_dataset(config):
         model_type = config["MODEL_TYPE"]
         type2class = {
             ModelType.GENERAL: "Dataset",
-            ModelType.SEQUENTIAL: "SequentialDataset",
+            ModelType.SEQUENTIAL: "SequentialDataset",  # mcl: original setting: "SequentialDataset" | "MaskedSequentialDataset"
             ModelType.CONTEXT: "Dataset",
             ModelType.KNOWLEDGE: "KnowledgeBasedDataset",
             ModelType.TRADITIONAL: "Dataset",
@@ -166,6 +166,9 @@ def data_preparation(config, dataset):
         built_datasets = dataset.build()
 
         train_dataset, valid_dataset, test_dataset = built_datasets
+        train_dataset.save_to_csv('train')
+        valid_dataset.save_to_csv('valid')
+        test_dataset.save_to_csv('test')
         train_sampler, valid_sampler, test_sampler = create_samplers(
             config, dataset, built_datasets
         )
@@ -298,12 +301,12 @@ def _get_AE_dataloader(config, phase: Literal["train", "valid", "test", "evaluat
 
 
 def _create_sampler(
-    dataset,
-    built_datasets,
-    distribution: str,
-    repeatable: bool,
-    alpha: float = 1.0,
-    base_sampler=None,
+        dataset,
+        built_datasets,
+        distribution: str,
+        repeatable: bool,
+        alpha: float = 1.0,
+        base_sampler=None,
 ):
     phases = ["train", "valid", "test"]
     sampler = None

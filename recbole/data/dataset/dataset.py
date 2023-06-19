@@ -214,7 +214,7 @@ class Dataset(torch.utils.data.Dataset):
     def _get_download_url(self, url_file, allow_none=False):
         current_path = os.path.dirname(os.path.realpath(__file__))
         with open(
-            os.path.join(current_path, f"../../properties/dataset/{url_file}.yaml")
+                os.path.join(current_path, f"../../properties/dataset/{url_file}.yaml")
         ) as f:
             dataset2url = yaml.load(f.read(), Loader=self.config.yaml_loader)
 
@@ -413,8 +413,8 @@ class Dataset(torch.utils.data.Dataset):
             load_col = set(self.config["load_col"][source])
 
         if (
-            self.config["unload_col"] is not None
-            and source in self.config["unload_col"]
+                self.config["unload_col"] is not None
+                and source in self.config["unload_col"]
         ):
             unload_col = set(self.config["unload_col"][source])
         else:
@@ -673,8 +673,8 @@ class Dataset(torch.utils.data.Dataset):
             Only float-like fields can be normalized.
         """
         if (
-            self.config["normalize_field"] is not None
-            and self.config["normalize_all"] is True
+                self.config["normalize_field"] is not None
+                and self.config["normalize_all"] is True
         ):
             raise ValueError(
                 "Normalize_field and normalize_all can't be set at the same time."
@@ -945,7 +945,7 @@ class Dataset(torch.utils.data.Dataset):
             self.inter_feat.drop(dropped_index, inplace=True)
 
     def _get_illegal_ids_by_inter_num(
-        self, field, feat, inter_num, inter_interval=None
+            self, field, feat, inter_num, inter_interval=None
     ):
         """Given inter feat, return illegal ids, whose inter num out of [min_num, max_num]
 
@@ -1002,9 +1002,9 @@ class Dataset(torch.utils.data.Dataset):
             left_bracket, right_bracket = endpoint_pair_str[0], endpoint_pair_str[-1]
             endpoint_pair = endpoint_pair_str[1:-1].split(",")
             if not (
-                len(endpoint_pair) == 2
-                and left_bracket in ["(", "["]
-                and right_bracket in [")", "]"]
+                    len(endpoint_pair) == 2
+                    and left_bracket in ["(", "["]
+                    and right_bracket in [")", "]"]
             ):
                 self.logger.warning(f"{endpoint_pair_str} is an illegal interval!")
                 continue
@@ -1024,7 +1024,7 @@ class Dataset(torch.utils.data.Dataset):
         """
         result = True
         for i, (left_bracket, left_point, right_point, right_bracket) in enumerate(
-            intervals
+                intervals
         ):
             temp_result = num >= left_point if left_bracket == "[" else num > left_point
             temp_result &= (
@@ -1135,7 +1135,7 @@ class Dataset(torch.utils.data.Dataset):
         for field, value in threshold.items():
             if field in self.inter_feat:
                 self.inter_feat[self.label_field] = (
-                    self.inter_feat[field] >= value
+                        self.inter_feat[field] >= value
                 ).astype(int)
             else:
                 raise ValueError(f"Field [{field}] not in inter_feat.")
@@ -1243,8 +1243,8 @@ class Dataset(torch.utils.data.Dataset):
             raise ValueError(f"Field [{field}] not defined in dataset.")
 
         if (
-            self.field2type[field] in {FeatureType.FLOAT, FeatureType.FLOAT_SEQ}
-            and field in self.config["numerical_features"]
+                self.field2type[field] in {FeatureType.FLOAT, FeatureType.FLOAT_SEQ}
+                and field in self.config["numerical_features"]
         ):
             return self.field2bucketnum[field]
         elif self.field2type[field] not in {FeatureType.TOKEN, FeatureType.TOKEN_SEQ}:
@@ -1660,7 +1660,7 @@ class Dataset(torch.utils.data.Dataset):
                 tot_cnt = len(grouped_index)
                 split_ids = self._calcu_split_ids(tot=tot_cnt, ratios=ratios)
                 for index, start, end in zip(
-                    next_index, [0] + split_ids, split_ids + [tot_cnt]
+                        next_index, [0] + split_ids, split_ids + [tot_cnt]
                 ):
                     index.extend(grouped_index[start:end])
 
@@ -1848,7 +1848,7 @@ class Dataset(torch.utils.data.Dataset):
             return self.item_feat
 
     def _create_sparse_matrix(
-        self, df_feat, source_field, target_field, form="coo", value_field=None
+            self, df_feat, source_field, target_field, form="coo", value_field=None
     ):
         """Get sparse matrix that describe relations between two fields.
 
@@ -1895,7 +1895,7 @@ class Dataset(torch.utils.data.Dataset):
             )
 
     def _create_graph(
-        self, tensor_feat, source_field, target_field, form="dgl", value_field=None
+            self, tensor_feat, source_field, target_field, form="dgl", value_field=None
     ):
         """Get graph that describe relations between two fields.
 
@@ -2165,3 +2165,21 @@ class Dataset(torch.utils.data.Dataset):
                     ]
                     new_data[k] = rnn_utils.pad_sequence(seq_data, batch_first=True)
         return Interaction(new_data)
+
+    def save_to_csv(self, filename):
+        save_dir = self.config["checkpoint_dir"]
+        ensure_dir(save_dir)
+        file = os.path.join(
+            save_dir, f'{self.config["model"]}-{self.config["dataset"]}-{filename}.csv'
+        )
+        self.logger.info(
+            set_color("Saving dataset into ", "pink") + f"[{file}]"
+        )
+        rating_field = self.config["RATING_FIELD"]
+        df = pd.DataFrame({
+            self.uid_field: self.id2token(self.uid_field, self.inter_feat[self.uid_field]),
+            self.iid_field: self.id2token(self.iid_field, self.inter_feat[self.iid_field]),
+            rating_field: self.inter_feat[rating_field],
+            self.time_field: self.inter_feat[self.time_field]
+        })
+        df.to_csv(file, index=False)

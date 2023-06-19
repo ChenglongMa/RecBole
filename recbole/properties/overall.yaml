@@ -18,7 +18,7 @@ wandb_project: 'recbole'        # (str) The project to conduct experiments in W&
 shuffle: True                   # (bool) Whether or not to shuffle the training data before each epoch.
 
 # Training Settings
-epochs: 300                     # (int) The number of training epochs.
+epochs: 1                     # (int) The number of training epochs.
 train_batch_size: 2048          # (int) The training batch size.
 learner: adam                   # (str) The name of used optimizer.
 learning_rate: 0.001            # (float) Learning rate.
@@ -51,3 +51,5 @@ valid_metric: NDCG@10            # (str) The evaluation metric for early stoppin
 valid_metric_bigger: True       # (bool) Whether to take a bigger valid metric value as a better result.
 eval_batch_size: 4096           # (int) The evaluation batch size.
 metric_decimal_place: 4         # (int) The decimal place of metric scores.
+
+MASK_FIELD: mask
