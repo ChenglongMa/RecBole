@@ -11,11 +11,11 @@ from recbole.quick_start import run_recbole, run_recboles
 from recbole.utils import list_to_latex
 
 
-def run(args, model, config_file_list):
+def run(args, model, dataset, config_file_list):
     if args.nproc == 1 and args.world_size <= 0:
         res = run_recbole(
             model=model,
-            dataset=args.dataset,
+            dataset=dataset,
             config_file_list=config_file_list,
         )
     else:
@@ -27,7 +27,7 @@ def run(args, model, config_file_list):
             run_recboles,
             args=(
                 model,
-                args.dataset,
+                dataset,
                 config_file_list,
                 args.ip,
                 args.port,
@@ -80,8 +80,10 @@ if __name__ == "__main__":
     config_file_list = (
         args.config_files.strip().split(" ") if args.config_files else None
     )
-    valid_file = args.valid_latex.strip()
-    test_file = args.test_latex.strip()
+    dataset = args.dataset
+
+    valid_file = f"./latex/{dataset}-valid.tex"
+    test_file = f"./latex/{dataset}-test.tex"
 
     valid_result_list = []
     test_result_list = []
@@ -93,7 +95,7 @@ if __name__ == "__main__":
 
         valid_res_dict = {"Model": model}
         test_res_dict = {"Model": model}
-        result = run(args, model, config_file_list)
+        result = run(args, model, dataset, config_file_list)
         valid_res_dict.update(result["best_valid_result"])
         test_res_dict.update(result["test_result"])
         bigger_flag = result["valid_score_bigger"]
