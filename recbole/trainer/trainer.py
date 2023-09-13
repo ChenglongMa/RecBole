@@ -651,6 +651,7 @@ class Trainer(AbstractTrainer):
             topk_results = pd.DataFrame({uid_field: user_id_list, iid_field: topk_items, score_field: topk_scores})
 
             now = strftime("%y%m%d%H%M%S")
+            os.makedirs(self.config['result_dir'], exist_ok=True)
             filename = os.path.join(self.config['result_dir'], f'topk_{self.config["model"]}_{dataset_name}_{now}.csv')
             topk_results.to_csv(filename, index=False)
         # mcl: add topk result
