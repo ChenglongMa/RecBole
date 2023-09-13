@@ -12,8 +12,8 @@ install_requires = [
     "scipy>=1.6.0",
     "pandas>=1.0.5",
     "tqdm>=4.48.2",
-    "colorlog==4.7.2",
-    "colorama==0.4.4",
+    "colorlog>=4.7.2",
+    "colorama>=0.4.4",
     "scikit_learn>=0.23.2",
     "pyyaml>=5.1.0",
     "tensorboard>=2.5.0",
@@ -48,7 +48,7 @@ if on_rtd:
 
 setup(
     name="recbole",
-    version="1.1.1",  # please remember to edit recbole/__init__.py in response, once updating the version
+    version="1.1.1.dev20230913",  # please remember to edit recbole/__init__.py in response, once updating the version
     description="A unified, comprehensive and efficient recommendation library",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -1,0 +1,2 @@
+gpu_id: '0,1,2'                 # (str) The id of GPU device(s).
+worker: 56                      # (int) The number of workers processing the data.
