@@ -23,6 +23,7 @@ def run(args, model, dataset, config_file_list):
             args.world_size = args.nproc
         import torch.multiprocessing as mp
 
+        mp.set_sharing_strategy('file_system')
         res = mp.spawn(
             run_recboles,
             args=(
