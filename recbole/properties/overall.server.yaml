@@ -1,2 +1,2 @@
-gpu_id: '0,1,2'                 # (str) The id of GPU device(s).
-worker: 56                      # (int) The number of workers processing the data.
+gpu_id: '0,1,2'                # (str) The id of GPU device(s).
+worker: 0                      # (int) The number of workers processing the data. This value must be 0 when running in multi-GPU env.

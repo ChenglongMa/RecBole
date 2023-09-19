@@ -94,6 +94,7 @@ def run_recbole(
     test_result = trainer.evaluate(
         test_data, load_best_model=saved, show_progress=config["show_progress"]
     )
+    topk_results = test_result.pop("topk_results")
 
     environment_tb = get_environment(config)
     logger.info(
@@ -109,6 +110,7 @@ def run_recbole(
         "valid_score_bigger": config["valid_metric_bigger"],
         "best_valid_result": best_valid_result,
         "test_result": test_result,
+        "topk_results": topk_results,
     }
 
 

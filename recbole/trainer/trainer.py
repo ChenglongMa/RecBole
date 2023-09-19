@@ -258,6 +258,8 @@ class Trainer(AbstractTrainer):
                     losses.item() if total_loss is None else total_loss + losses.item()
                 )
             self._check_nan(loss)
+            if isinstance(loss, torch.Tensor):
+                loss = loss.to(self.device)
             scaler.scale(loss + sync_loss).backward()
             if self.clip_grad_norm:
                 clip_grad_norm_(self.model.parameters(), **self.clip_grad_norm)
@@ -653,15 +655,22 @@ class Trainer(AbstractTrainer):
             now = strftime("%y%m%d%H%M%S")
             os.makedirs(self.config['result_dir'], exist_ok=True)
             filename = os.path.join(self.config['result_dir'], f'topk_{self.config["model"]}_{dataset_name}_{now}.csv')
-            topk_results.to_csv(filename, index=False)
+            if not self.config["single_spec"]:
+                gather_topk_results = [None for _ in range(self.config["world_size"])]
+                torch.distributed.all_gather_object(gather_topk_results, topk_results)
+                topk_results = pd.concat(gather_topk_results, axis=0)
+            # topk_results.to_csv(filename, index=False)
+            
         # mcl: add topk result
-
+        
         self.eval_collector.model_collect(self.model)
         struct = self.eval_collector.get_data_struct()
         result = self.evaluator.evaluate(struct)
         if not self.config["single_spec"]:
             result = self._map_reduce(result, num_sample)
         self.wandblogger.log_eval_metrics(result, head="eval")
+        if phase == 'test':
+            result['topk_results'] = topk_results
         return result
 
     def _map_reduce(self, result, num_sample):

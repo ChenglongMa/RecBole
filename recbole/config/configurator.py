@@ -493,7 +493,7 @@ class Config(object):
                 else torch.device("cuda")
             )
         else:
-            assert len(gpu_id.split(",")) >= self.final_config_dict["nproc"]
+            assert len(gpu_id.split(",")) >= self.final_config_dict["nproc"], f"GPU ID: {gpu_id}, nproc: {self.final_config_dict['nproc']}"
             torch.distributed.init_process_group(
                 backend="nccl",
                 rank=self.final_config_dict["local_rank"]
