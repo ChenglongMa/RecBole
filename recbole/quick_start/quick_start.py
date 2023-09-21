@@ -13,11 +13,14 @@ recbole.quick_start
 """
 import logging
 from logging import getLogger
+import os
 
 import sys
 
 
 import pickle
+import time
+import pandas as pd
 from ray import tune
 
 from recbole.config import Config
@@ -75,7 +78,8 @@ def run_recbole(
 
     # model loading and initialization
     init_seed(config["seed"] + config["local_rank"], config["reproducibility"])
-    model = get_model(config["model"])(config, train_data._dataset).to(config["device"])
+    model = get_model(config["model"])(
+        config, train_data._dataset).to(config["device"])
     logger.info(model)
 
     # transform = construct_transform(config)
@@ -104,6 +108,7 @@ def run_recbole(
 
     logger.info(set_color("best valid ", "yellow") + f": {best_valid_result}")
     logger.info(set_color("test result", "yellow") + f": {test_result}")
+    save_results(config, test_result, topk_results)
 
     return {
         "best_valid_score": best_valid_score,
@@ -112,6 +117,37 @@ def run_recbole(
         "test_result": test_result,
         "topk_results": topk_results,
     }
+
+
+def save_results(config, test_result, topk_results):
+    if config["local_rank"] != 0:
+        return
+    now = time.strftime("%y%m%d%H%M%S")
+    eval_results = []
+    model_name = config["model"]
+    dataset_name = config["dataset"]
+
+    for metric, value in test_result.items():
+        eval_results.append([model_name, metric, value])
+    eval_results = pd.DataFrame(eval_results, columns=[
+                                'model', 'metric', 'value'])
+    result_dir = config['result_dir']
+    os.makedirs(result_dir, exist_ok=True)
+    
+    nproc = config['nproc']
+    filename = os.path.join(
+        result_dir, f'result_{model_name}_{dataset_name}_{now}_{nproc}.csv')
+    if os.path.exists(filename):
+        print(f'{filename} already exists!')
+    else:
+        eval_results.to_csv(filename, index=False)
+
+    filename = os.path.join(
+        result_dir, f'topk_{model_name}_{dataset_name}_{now}_{nproc}.csv')
+    if os.path.exists(filename):
+        print(f'{filename} already exists!')
+    else:
+        topk_results.to_csv(filename, index=False)
 
 
 def run_recboles(rank, *args):
@@ -150,7 +186,8 @@ def objective_function(config_dict=None, config_file_list=None, saved=True):
     train_data, valid_data, test_data = data_preparation(config, dataset)
     init_seed(config["seed"], config["reproducibility"])
     model_name = config["model"]
-    model = get_model(model_name)(config, train_data._dataset).to(config["device"])
+    model = get_model(model_name)(
+        config, train_data._dataset).to(config["device"])
     trainer = get_trainer(config["MODEL_TYPE"], config["model"])(config, model)
     best_valid_score, best_valid_result = trainer.fit(
         train_data, valid_data, verbose=False, saved=saved
@@ -196,7 +233,8 @@ def load_data_and_model(model_file):
     train_data, valid_data, test_data = data_preparation(config, dataset)
 
     init_seed(config["seed"], config["reproducibility"])
-    model = get_model(config["model"])(config, train_data._dataset).to(config["device"])
+    model = get_model(config["model"])(
+        config, train_data._dataset).to(config["device"])
     model.load_state_dict(checkpoint["state_dict"])
     model.load_other_parameter(checkpoint.get("other_parameter"))
 

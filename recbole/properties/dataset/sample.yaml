@@ -1,5 +1,5 @@
 # Atomic File Format
-field_separator: "\t"           # (str) Separator of different columns in atomic files.
+field_separator: ","           # (str) Separator of different columns in atomic files.
 seq_separator: " "              # (str) Separator inside the sequence features.
 
 # Basic Information
@@ -15,7 +15,7 @@ numerical_features: []          # (list) Float feature fields to be embedded
 
 # Selectively Loading
 load_col:                       # (dict) The suffix of atomic files: (list) field names to be loaded.
-    inter: [user_id, item_id]
+    inter: [user_id, item_id, rating, timestamp, phase]
     # the others
 unload_col: ~                   # (dict) The suffix of atomic files: (list) field names NOT to be loaded.
 unused_col: ~                   # (dict) The suffix of atomic files: (list) field names which are loaded but not used.
@@ -54,4 +54,4 @@ entity_kg_num_interval: "[0,inf)"       # (str) Entity interval for filtering kg
 relation_kg_num_interval: "[0,inf)"     # (str) Relation interval for filtering kg.
 
 # Benchmark .inter file
-benchmark_filename: ~           # (list) List of pre-split user-item interaction suffix.
+benchmark_filename: ['train','valid','test']

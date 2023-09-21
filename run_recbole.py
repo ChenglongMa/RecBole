@@ -59,35 +59,12 @@ if __name__ == "__main__":
 
     if nproc == 1 and args.world_size <= 0:
 
-        result = run_recbole(model=args.model, dataset=args.dataset,
+        run_recbole(model=args.model, dataset=args.dataset,
                              config_file_list=config_file_list, config_dict=config_dict)
-        elapse = (time.time() - start) / 60  # unit: mins
-
-        eval_results = []
-        for metric, value in result['test_result'].items():
-            eval_results.append([args.model, metric, value, elapse])
-        eval_results = pd.DataFrame(eval_results, columns=[
-                                    'model', 'metric', 'value', 'elapse(mins)'])
-
-        result_dir = './result'
-        os.makedirs(result_dir, exist_ok=True)
-        filename = f'{result_dir}/result_{now}.csv'
-        if os.path.exists(filename):
-            print(f'{filename} already exists!')
-        eval_results.to_csv(filename, index=False)
-        print(eval_results.head())
-        filename = os.path.join(
-            result_dir, f'topk_{args.model}_{args.dataset}_{now}.csv')
-        if os.path.exists(filename):
-            print(f'{filename} already exists!')
-        result["topk_results"].to_csv(filename, index=False)
-
     else:
         if args.world_size == -1:
             args.world_size = nproc
         import torch.multiprocessing as mp
-
-        mp.set_sharing_strategy('file_system')
         mp.spawn(
             run_recboles,
             args=(
@@ -104,3 +81,5 @@ if __name__ == "__main__":
         )
     elapse = (time.time() - start) / 60  # unit: mins
     print(f'Elapse: {elapse:.2f} mins')
+
+    # https://pytorch.org/tutorials/advanced/generic_join.html#distributed-training-with-uneven-inputs-using-the-join-context-manager
