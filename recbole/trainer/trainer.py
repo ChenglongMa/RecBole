@@ -130,13 +130,10 @@ class Trainer(AbstractTrainer):
         self.device = config["device"]
         self.checkpoint_dir = config["checkpoint_dir"]
         self.enable_amp = config["enable_amp"]
-        self.enable_scaler = torch.cuda.is_available(
-        ) and config["enable_scaler"]
+        self.enable_scaler = torch.cuda.is_available() and config["enable_scaler"]
         ensure_dir(self.checkpoint_dir)
-        saved_model_file = "{}-{}.pth".format(
-            self.config["model"], get_local_time())
-        self.saved_model_file = os.path.join(
-            self.checkpoint_dir, saved_model_file)
+        saved_model_file = "{}-{}.pth".format(self.config["model"], get_local_time())
+        self.saved_model_file = os.path.join(self.checkpoint_dir, saved_model_file)
         self.weight_decay = config["weight_decay"]
 
         self.start_epoch = 0
@@ -170,9 +167,9 @@ class Trainer(AbstractTrainer):
         weight_decay = kwargs.pop("weight_decay", self.weight_decay)
 
         if (
-                self.config["reg_weight"]
-                and weight_decay
-                and weight_decay * self.config["reg_weight"] > 0
+            self.config["reg_weight"]
+            and weight_decay
+            and weight_decay * self.config["reg_weight"] > 0
         ):
             self.logger.warning(
                 "The parameters [weight_decay] and [reg_weight] are specified simultaneously, "
@@ -180,11 +177,9 @@ class Trainer(AbstractTrainer):
             )
 
         if learner.lower() == "adam":
-            optimizer = optim.Adam(
-                params, lr=learning_rate, weight_decay=weight_decay)
+            optimizer = optim.Adam(params, lr=learning_rate, weight_decay=weight_decay)
         elif learner.lower() == "sgd":
-            optimizer = optim.SGD(params, lr=learning_rate,
-                                  weight_decay=weight_decay)
+            optimizer = optim.SGD(params, lr=learning_rate, weight_decay=weight_decay)
         elif learner.lower() == "adagrad":
             optimizer = optim.Adagrad(
                 params, lr=learning_rate, weight_decay=weight_decay
@@ -273,8 +268,7 @@ class Trainer(AbstractTrainer):
             scaler.update()
             if self.gpu_available and show_progress:
                 iter_data.set_postfix_str(
-                    set_color("GPU RAM: " +
-                              get_gpu_usage(self.device), "yellow")
+                    set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
                 )
         return total_loss
 
@@ -304,8 +298,7 @@ class Trainer(AbstractTrainer):
         """
         if not self.config["single_spec"] and self.config["local_rank"] != 0:
             return
-        saved_model_file = kwargs.pop(
-            "saved_model_file", self.saved_model_file)
+        saved_model_file = kwargs.pop("saved_model_file", self.saved_model_file)
         state = {
             "config": self.config,
             "epoch": epoch,
@@ -370,8 +363,7 @@ class Trainer(AbstractTrainer):
             )
         else:
             des = "%." + str(des) + "f"
-            train_loss_output += set_color("train loss",
-                                           "blue") + ": " + des % losses
+            train_loss_output += set_color("train loss", "blue") + ": " + des % losses
         return train_loss_output + "]"
 
     def _add_train_loss_to_tensorboard(self, epoch_idx, losses, tag="Loss/Train"):
@@ -404,7 +396,7 @@ class Trainer(AbstractTrainer):
         )
         for k in hparam_dict:
             if hparam_dict[k] is not None and not isinstance(
-                    hparam_dict[k], (bool, str, float, int)
+                hparam_dict[k], (bool, str, float, int)
             ):
                 hparam_dict[k] = str(hparam_dict[k])
 
@@ -413,13 +405,13 @@ class Trainer(AbstractTrainer):
         )
 
     def fit(
-            self,
-            train_data,
-            valid_data=None,
-            verbose=True,
-            saved=True,
-            show_progress=False,
-            callback_fn=None,
+        self,
+        train_data,
+        valid_data=None,
+        verbose=True,
+        saved=True,
+        show_progress=False,
+        callback_fn=None,
     ):
         r"""Train the model based on the train data and the valid data.
 
@@ -451,8 +443,7 @@ class Trainer(AbstractTrainer):
                 train_data, epoch_idx, show_progress=show_progress
             )
             self.train_loss_dict[epoch_idx] = (
-                sum(train_loss) if isinstance(
-                    train_loss, tuple) else train_loss
+                sum(train_loss) if isinstance(train_loss, tuple) else train_loss
             )
             training_end_time = time()
             train_loss_output = self._generate_train_loss_output(
@@ -462,8 +453,7 @@ class Trainer(AbstractTrainer):
                 self.logger.info(train_loss_output)
             self._add_train_loss_to_tensorboard(epoch_idx, train_loss)
             self.wandblogger.log_metrics(
-                {"epoch": epoch_idx, "train_loss": train_loss,
-                    "train_step": epoch_idx},
+                {"epoch": epoch_idx, "train_loss": train_loss, "train_step": epoch_idx},
                 head="train",
             )
 
@@ -500,14 +490,12 @@ class Trainer(AbstractTrainer):
                     + ": %f]"
                 ) % (epoch_idx, valid_end_time - valid_start_time, valid_score)
                 valid_result_output = (
-                    set_color("valid result", "blue") +
-                    ": \n" + dict2str(valid_result)
+                    set_color("valid result", "blue") + ": \n" + dict2str(valid_result)
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
                     self.logger.info(valid_result_output)
-                self.tensorboard.add_scalar(
-                    "Vaild_score", valid_score, epoch_idx)
+                self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
                 self.wandblogger.log_metrics(
                     {**valid_result, "valid_step": valid_step}, head="valid"
                 )
@@ -540,8 +528,7 @@ class Trainer(AbstractTrainer):
             scores = self.model.full_sort_predict(interaction.to(self.device))
         except NotImplementedError:
             inter_len = len(interaction)
-            new_inter = interaction.to(
-                self.device).repeat_interleave(self.tot_item_num)
+            new_inter = interaction.to(self.device).repeat_interleave(self.tot_item_num)
             batch_size = len(new_inter)
             new_inter.update(self.item_tensor.repeat(inter_len))
             if batch_size <= self.test_batch_size:
@@ -576,7 +563,7 @@ class Trainer(AbstractTrainer):
 
     @torch.no_grad()
     def evaluate(
-            self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False
     ):
         r"""Evaluate the model based on the eval data.
 
@@ -630,56 +617,59 @@ class Trainer(AbstractTrainer):
         topk = max(self.config["topk"])
         eval_dataset = eval_data.dataset
         dataset_name = eval_dataset.dataset_name
-        uid_field, iid_field, score_field = eval_dataset.uid_field, eval_dataset.iid_field, 'score'
+        uid_field, iid_field, score_field = (
+            eval_dataset.uid_field,
+            eval_dataset.iid_field,
+            "score",
+        )
         phase = eval_data._sampler.phase
         user_id_list = []
         # end of mcl
-        if phase == 'test':
-            setattr(self.eval_collector.register, 'rec.score', True)
+        if phase == "test":
+            setattr(self.eval_collector.register, "rec.score", True)
 
         for batch_idx, batched_data in enumerate(iter_data):
-            interaction, scores, positive_u, positive_i = eval_func(
-                batched_data)
+            interaction, scores, positive_u, positive_i = eval_func(batched_data)
             # mcl: added
-            if phase == 'test':
+            if phase == "test":
                 user_id_list.extend(interaction[uid_field].tolist())
             # end of mcl
 
             if self.gpu_available and show_progress:
                 iter_data.set_postfix_str(
-                    set_color("GPU RAM: " +
-                              get_gpu_usage(self.device), "yellow")
+                    set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
                 )
             self.eval_collector.eval_batch_collect(
                 scores, interaction, positive_u, positive_i
             )
 
         # mcl: add topk result
-        if phase == 'test':
-            topk_items = self.eval_collector.data_struct['rec.items']
-            all_scores = self.eval_collector.data_struct['rec.score']
-            topk_scores = all_scores.gather(
-                dim=-1, index=topk_items).cpu().detach().flatten().tolist()
+        if phase == "test":
+            topk_items = self.eval_collector.data_struct["rec.items"]
+            all_scores = self.eval_collector.data_struct["rec.score"]
+            topk_scores = (
+                all_scores.gather(dim=-1, index=topk_items)
+                .cpu()
+                .detach()
+                .flatten()
+                .tolist()
+            )
             topk_items = topk_items.cpu().detach().flatten().tolist()
-            topk_items = eval_dataset.id2token(
-                eval_dataset.iid_field, topk_items)
-            user_id_list = eval_dataset.id2token(
-                eval_dataset.uid_field, user_id_list)
+            topk_items = eval_dataset.id2token(eval_dataset.iid_field, topk_items)
+            user_id_list = eval_dataset.id2token(eval_dataset.uid_field, user_id_list)
             user_id_list = np.repeat(user_id_list, topk)
             topk_results = pd.DataFrame(
-                {uid_field: user_id_list, iid_field: topk_items, score_field: topk_scores})
+                {
+                    uid_field: user_id_list,
+                    iid_field: topk_items,
+                    score_field: topk_scores,
+                }
+            )
 
-            now = strftime("%y%m%d%H%M%S")
-            os.makedirs(self.config['result_dir'], exist_ok=True)
-            gpu_id = self.config['local_rank']
-            filename = os.path.join(
-                self.config['result_dir'], f'topk_{self.config["model"]}_{dataset_name}_{now}_gpu_{gpu_id}.csv')
-            topk_results.to_csv(filename, index=False)
             if not self.config["single_spec"]:
                 gather_topk_results = [None for _ in range(self.config["world_size"])]
                 dist.all_gather_object(gather_topk_results, topk_results)
                 topk_results = pd.concat(gather_topk_results, axis=0)
-            # topk_results.to_csv(filename, index=False)
 
         # mcl: add topk result
 
@@ -689,8 +679,8 @@ class Trainer(AbstractTrainer):
             struct = self._gather_evaluation_resources(struct)
         result = self.evaluator.evaluate(struct)
         self.wandblogger.log_eval_metrics(result, head="eval")
-        if phase == 'test':
-            result['topk_results'] = topk_results
+        if phase == "test":
+            result["topk_results"] = topk_results
         return result
 
     def _gather_evaluation_resources(self, struct):
@@ -707,8 +697,7 @@ class Trainer(AbstractTrainer):
         spilt_interaction = dict()
         for key, tensor in interaction.interaction.items():
             spilt_interaction[key] = tensor.split(self.test_batch_size, dim=0)
-        num_block = (batch_size + self.test_batch_size -
-                     1) // self.test_batch_size
+        num_block = (batch_size + self.test_batch_size - 1) // self.test_batch_size
         result_list = []
         for i in range(num_block):
             current_interaction = dict()
@@ -739,8 +728,7 @@ class KGTrainer(Trainer):
         if self.train_rec_step is None or self.train_kg_step is None:
             interaction_state = KGDataLoaderState.RSKG
         elif (
-                epoch_idx % (self.train_rec_step +
-                             self.train_kg_step) < self.train_rec_step
+            epoch_idx % (self.train_rec_step + self.train_kg_step) < self.train_rec_step
         ):
             interaction_state = KGDataLoaderState.RS
         else:
@@ -830,8 +818,7 @@ class PretrainTrainer(Trainer):
                 train_data, epoch_idx, show_progress=show_progress
             )
             self.train_loss_dict[epoch_idx] = (
-                sum(train_loss) if isinstance(
-                    train_loss, tuple) else train_loss
+                sum(train_loss) if isinstance(train_loss, tuple) else train_loss
             )
             training_end_time = time()
             train_loss_output = self._generate_train_loss_output(
@@ -845,14 +832,12 @@ class PretrainTrainer(Trainer):
                 saved_model_file = os.path.join(
                     self.checkpoint_dir,
                     "{}-{}-{}.pth".format(
-                        self.config["model"], self.config["dataset"], str(
-                            epoch_idx + 1)
+                        self.config["model"], self.config["dataset"], str(epoch_idx + 1)
                     ),
                 )
                 self.save_pretrained_model(epoch_idx, saved_model_file)
                 update_output = (
-                    set_color("Saving current", "blue") +
-                    ": %s" % saved_model_file
+                    set_color("Saving current", "blue") + ": %s" % saved_model_file
                 )
                 if verbose:
                     self.logger.info(update_output)
@@ -870,13 +855,13 @@ class S3RecTrainer(PretrainTrainer):
         super(S3RecTrainer, self).__init__(config, model)
 
     def fit(
-            self,
-            train_data,
-            valid_data=None,
-            verbose=True,
-            saved=True,
-            show_progress=False,
-            callback_fn=None,
+        self,
+        train_data,
+        valid_data=None,
+        verbose=True,
+        saved=True,
+        show_progress=False,
+        callback_fn=None,
     ):
         if self.model.train_stage == "pretrain":
             return self.pretrain(train_data, verbose, show_progress)
@@ -954,8 +939,7 @@ class DecisionTreeTrainer(AbstractTrainer):
         # model saved
         self.checkpoint_dir = config["checkpoint_dir"]
         ensure_dir(self.checkpoint_dir)
-        temp_file = "{}-{}-temp.pth".format(
-            self.config["model"], get_local_time())
+        temp_file = "{}-{}-temp.pth".format(self.config["model"], get_local_time())
         self.temp_file = os.path.join(self.checkpoint_dir, temp_file)
 
         temp_best_file = "{}-{}-temp-best.pth".format(
@@ -963,10 +947,8 @@ class DecisionTreeTrainer(AbstractTrainer):
         )
         self.temp_best_file = os.path.join(self.checkpoint_dir, temp_best_file)
 
-        saved_model_file = "{}-{}.pth".format(
-            self.config["model"], get_local_time())
-        self.saved_model_file = os.path.join(
-            self.checkpoint_dir, saved_model_file)
+        saved_model_file = "{}-{}.pth".format(self.config["model"], get_local_time())
+        self.saved_model_file = os.path.join(self.checkpoint_dir, saved_model_file)
 
         self.stopping_step = config["stopping_step"]
         self.valid_metric_bigger = config["valid_metric_bigger"]
@@ -1057,7 +1039,7 @@ class DecisionTreeTrainer(AbstractTrainer):
         torch.save(state, self.saved_model_file)
 
     def fit(
-            self, train_data, valid_data=None, verbose=True, saved=True, show_progress=False
+        self, train_data, valid_data=None, verbose=True, saved=True, show_progress=False
     ):
         for epoch_idx in range(self.epochs):
             self._train_at_once(train_data, valid_data)
@@ -1090,14 +1072,12 @@ class DecisionTreeTrainer(AbstractTrainer):
                     + ": %f]"
                 ) % (epoch_idx, valid_end_time - valid_start_time, valid_score)
                 valid_result_output = (
-                    set_color("valid result", "blue") +
-                    ": \n" + dict2str(valid_result)
+                    set_color("valid result", "blue") + ": \n" + dict2str(valid_result)
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
                     self.logger.info(valid_result_output)
-                self.tensorboard.add_scalar(
-                    "Vaild_score", valid_score, epoch_idx)
+                self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
 
                 if update_flag:
                     if saved:
@@ -1118,7 +1098,7 @@ class DecisionTreeTrainer(AbstractTrainer):
         return self.best_valid_score, self.best_valid_result
 
     def evaluate(
-            self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False
     ):
         raise NotImplementedError
 
@@ -1187,7 +1167,7 @@ class XGBoostTrainer(DecisionTreeTrainer):
         self.boost_model = self.temp_file
 
     def evaluate(
-            self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False
     ):
         if load_best_model:
             if model_file:
@@ -1265,7 +1245,7 @@ class LightGBMTrainer(DecisionTreeTrainer):
         self.boost_model = self.temp_file
 
     def evaluate(
-            self, eval_data, load_best_model=True, model_file=None, show_progress=False
+        self, eval_data, load_best_model=True, model_file=None, show_progress=False
     ):
         if load_best_model:
             if model_file:
@@ -1274,8 +1254,7 @@ class LightGBMTrainer(DecisionTreeTrainer):
                 checkpoint_file = self.temp_best_file
             self.model = self.lgb.Booster(model_file=checkpoint_file)
 
-        self.deval_data, self.deval_label = self._interaction_to_sparse(
-            eval_data)
+        self.deval_data, self.deval_label = self._interaction_to_sparse(eval_data)
         self.eval_true = torch.Tensor(self.deval_label)
         self.eval_pred = torch.Tensor(self.model.predict(self.deval_data))
 
@@ -1294,13 +1273,13 @@ class RaCTTrainer(PretrainTrainer):
         super(RaCTTrainer, self).__init__(config, model)
 
     def fit(
-            self,
-            train_data,
-            valid_data=None,
-            verbose=True,
-            saved=True,
-            show_progress=False,
-            callback_fn=None,
+        self,
+        train_data,
+        valid_data=None,
+        verbose=True,
+        saved=True,
+        show_progress=False,
+        callback_fn=None,
     ):
         if self.model.train_stage == "actor_pretrain":
             return self.pretrain(train_data, verbose, show_progress)
@@ -1335,9 +1314,9 @@ class RecVAETrainer(Trainer):
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
         self.optimizer = self.optimizer_encoder
 
-        def encoder_loss_func(data): return self.model.calculate_loss(
-            data, encoder_flag=True
-        )
+        def encoder_loss_func(data):
+            return self.model.calculate_loss(data, encoder_flag=True)
+
         for epoch in range(self.n_enc_epochs):
             super()._train_epoch(
                 train_data,
@@ -1350,9 +1329,9 @@ class RecVAETrainer(Trainer):
         loss = 0.0
         self.optimizer = self.optimizer_decoder
 
-        def decoder_loss_func(data): return self.model.calculate_loss(
-            data, encoder_flag=False
-        )
+        def decoder_loss_func(data):
+            return self.model.calculate_loss(data, encoder_flag=False)
+
         for epoch in range(self.n_dec_epochs):
             loss += super()._train_epoch(
                 train_data,
@@ -1371,13 +1350,13 @@ class NCLTrainer(Trainer):
         assert self.num_m_step is not None
 
     def fit(
-            self,
-            train_data,
-            valid_data=None,
-            verbose=True,
-            saved=True,
-            show_progress=False,
-            callback_fn=None,
+        self,
+        train_data,
+        valid_data=None,
+        verbose=True,
+        saved=True,
+        show_progress=False,
+        callback_fn=None,
     ):
         r"""Train the model based on the train data and the valid data.
 
@@ -1410,8 +1389,7 @@ class NCLTrainer(Trainer):
                 train_data, epoch_idx, show_progress=show_progress
             )
             self.train_loss_dict[epoch_idx] = (
-                sum(train_loss) if isinstance(
-                    train_loss, tuple) else train_loss
+                sum(train_loss) if isinstance(train_loss, tuple) else train_loss
             )
             training_end_time = time()
             train_loss_output = self._generate_train_loss_output(
@@ -1460,14 +1438,12 @@ class NCLTrainer(Trainer):
                     + ": %f]"
                 ) % (epoch_idx, valid_end_time - valid_start_time, valid_score)
                 valid_result_output = (
-                    set_color("valid result", "blue") +
-                    ": \n" + dict2str(valid_result)
+                    set_color("valid result", "blue") + ": \n" + dict2str(valid_result)
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
                     self.logger.info(valid_result_output)
-                self.tensorboard.add_scalar(
-                    "Vaild_score", valid_score, epoch_idx)
+                self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
 
                 if update_flag:
                     if saved:
@@ -1559,7 +1535,6 @@ class NCLTrainer(Trainer):
             scaler.update()
             if self.gpu_available and show_progress:
                 iter_data.set_postfix_str(
-                    set_color("GPU RAM: " +
-                              get_gpu_usage(self.device), "yellow")
+                    set_color("GPU RAM: " + get_gpu_usage(self.device), "yellow")
                 )
         return total_loss

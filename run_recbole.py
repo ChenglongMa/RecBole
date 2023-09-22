@@ -20,13 +20,11 @@ import torch
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=str,
-                        default="BPR", help="name of models")
+    parser.add_argument("--model", "-m", type=str, default="BPR", help="name of models")
     parser.add_argument(
         "--dataset", "-d", type=str, default="ml-100k", help="name of datasets"
     )
-    parser.add_argument("--config_files", type=str,
-                        default=None, help="config files")
+    parser.add_argument("--config_files", type=str, default=None, help="config files")
     parser.add_argument(
         "--nproc", type=int, default=1, help="the number of process in this group"
     )
@@ -52,19 +50,23 @@ if __name__ == "__main__":
     config_file_list = (
         args.config_files.strip().split(" ") if args.config_files else None
     )
-    config_dict = {'now': now}
+    config_dict = {"now": now}
 
     start = time.time()
     nproc = torch.cuda.device_count() if args.nproc == -1 else args.nproc
 
     if nproc == 1 and args.world_size <= 0:
-
-        run_recbole(model=args.model, dataset=args.dataset,
-                             config_file_list=config_file_list, config_dict=config_dict)
+        run_recbole(
+            model=args.model,
+            dataset=args.dataset,
+            config_file_list=config_file_list,
+            config_dict=config_dict,
+        )
     else:
         if args.world_size == -1:
             args.world_size = nproc
         import torch.multiprocessing as mp
+
         mp.spawn(
             run_recboles,
             args=(
@@ -80,6 +82,6 @@ if __name__ == "__main__":
             nprocs=nproc,
         )
     elapse = (time.time() - start) / 60  # unit: mins
-    print(f'Elapse: {elapse:.2f} mins')
+    print(f"Elapse: {elapse:.2f} mins")
 
     # https://pytorch.org/tutorials/advanced/generic_join.html#distributed-training-with-uneven-inputs-using-the-join-context-manager
