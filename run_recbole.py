@@ -10,13 +10,8 @@
 import argparse
 import os
 import time
-from ast import arg
 
-import pandas as pd
-
-from recbole.quick_start import run_recbole, run_recboles
-from recbole.utils import list_to_latex
-import torch
+from recbole.quick_start import run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -45,43 +40,21 @@ if __name__ == "__main__":
     )
 
     args, _ = parser.parse_known_args()
-    now = time.strftime("%y%m%d%H%M%S")
 
     config_file_list = (
         args.config_files.strip().split(" ") if args.config_files else None
     )
-    config_dict = {"now": now}
-
     start = time.time()
-    nproc = torch.cuda.device_count() if args.nproc == -1 else args.nproc
+    run(
+        args.model,
+        args.dataset,
+        config_file_list=config_file_list,
+        nproc=args.nproc,
+        world_size=args.world_size,
+        ip=args.ip,
+        port=args.port,
+        group_offset=args.group_offset,
+    )
 
-    if nproc == 1 and args.world_size <= 0:
-        run_recbole(
-            model=args.model,
-            dataset=args.dataset,
-            config_file_list=config_file_list,
-            config_dict=config_dict,
-        )
-    else:
-        if args.world_size == -1:
-            args.world_size = nproc
-        import torch.multiprocessing as mp
-
-        mp.spawn(
-            run_recboles,
-            args=(
-                args.model,
-                args.dataset,
-                config_file_list,
-                args.ip,
-                args.port,
-                args.world_size,
-                nproc,
-                args.group_offset,
-            ),
-            nprocs=nproc,
-        )
     elapse = (time.time() - start) / 60  # unit: mins
     print(f"Elapse: {elapse:.2f} mins")
-
-    # https://pytorch.org/tutorials/advanced/generic_join.html#distributed-training-with-uneven-inputs-using-the-join-context-manager
