@@ -15,7 +15,7 @@ numerical_features: []          # (list) Float feature fields to be embedded
 
 # Selectively Loading
 load_col:                       # (dict) The suffix of atomic files: (list) field names to be loaded.
-    inter: [user_id, item_id, rating, timestamp, phase]
+    inter: [user_id, item_id, rating, timestamp, phase, item_id_list]
     # the others
 unload_col: ~                   # (dict) The suffix of atomic files: (list) field names NOT to be loaded.
 unused_col: ~                   # (dict) The suffix of atomic files: (list) field names which are loaded but not used.
