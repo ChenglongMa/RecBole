@@ -18,3 +18,4 @@ wandb/*
 /latex/
 /out/
 /dataset/
+temp*
