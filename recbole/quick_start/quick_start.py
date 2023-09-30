@@ -12,14 +12,11 @@ recbole.quick_start
 ########################
 """
 import logging
-from logging import getLogger
 import os
-
 import sys
-
-
-import pickle
 import time
+from logging import getLogger
+
 import pandas as pd
 from ray import tune
 
@@ -27,17 +24,13 @@ from recbole.config import Config
 from recbole.data import (
     create_dataset,
     data_preparation,
-    save_split_dataloaders,
-    load_split_dataloaders,
 )
-from recbole.data.transform import construct_transform
 from recbole.utils import (
     init_logger,
     get_model,
     get_trainer,
     init_seed,
     set_color,
-    get_flops,
     get_environment,
 )
 
@@ -72,13 +65,15 @@ def run(
         queue = mp.get_context('spawn').SimpleQueue()
 
         config_dict = config_dict or {}
-        config_dict.update({
-            "world_size": world_size,
-            "ip": ip,
-            "port": port,
-            "nproc": nproc,
-            "offset": group_offset,
-        })
+        config_dict.update(
+            {
+                "world_size": world_size,
+                "ip": ip,
+                "port": port,
+                "nproc": nproc,
+                "offset": group_offset,
+            }
+        )
         kwargs = {
             "config_dict": config_dict,
             "queue": queue,
@@ -97,7 +92,12 @@ def run(
 
 
 def run_recbole(
-    model=None, dataset=None, config_file_list=None, config_dict=None, saved=True, queue=None
+    model=None,
+    dataset=None,
+    config_file_list=None,
+    config_dict=None,
+    saved=True,
+    queue=None,
 ):
     r"""A fast running api, which includes the complete process of
     training and testing a model on a specified dataset
@@ -172,10 +172,14 @@ def run_recbole(
         "topk_results": topk_results,
     }
 
+    if not config["single_spec"]:
+        import torch.distributed as dist
+
+        dist.destroy_process_group()
     if config["local_rank"] == 0 and queue is not None:
         queue.put(result)  # for multiprocessing, e.g., mp.spawn
 
-    return result # for the single process
+    return result  # for the single process
 
 
 def save_results(config, test_result, topk_results):
