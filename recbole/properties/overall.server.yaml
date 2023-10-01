@@ -1,2 +1,4 @@
 gpu_id: '0,1,2'                # (str) The id of GPU device(s).
 worker: 0                      # (int) The number of workers processing the data. This value must be 0 when running in multi-GPU env.
+topk: [10, 20, 30, 40, 50]                      # (list or int or None) The value of k for topk evaluation metrics.
+valid_metric: NDCG@10            # (str) The evaluation metric for early stopping.
