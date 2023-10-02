@@ -11,9 +11,9 @@
             "program": "${workspaceFolder}/run_recbole_group.py",
             "args": [
                 "-m",
-                "Pop,BPR",
+                "GRU4Rec,LightGCN",
                 "--dataset",
-                "test",
+                "ml-100k",
                 "--config_files",
                 "./recbole/properties/overall.dev.yaml",
                 "--nproc",

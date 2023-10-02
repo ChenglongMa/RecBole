@@ -33,6 +33,8 @@ from recbole.utils import (
     set_color,
     get_environment,
 )
+import torch.multiprocessing as mp
+import torch
 
 
 def run(
@@ -48,6 +50,12 @@ def run(
     group_offset=0,
 ):
     if nproc == 1 and world_size <= 0:
+        mp.set_sharing_strategy("file_system")
+
+        config_dict = config_dict or {}
+        config_dict["worker"] = os.cpu_count()
+        print(f'Using {config_dict["worker"]} processes')
+
         res = run_recbole(
             model=model,
             dataset=dataset,
@@ -56,9 +64,11 @@ def run(
             saved=saved,
         )
     else:
+        nproc = nproc if nproc > 0 else torch.cuda.device_count()
+        print(f'Using {nproc} processes')
+
         if world_size == -1:
             world_size = nproc
-        import torch.multiprocessing as mp
 
         # Refer to https://discuss.pytorch.org/t/problems-with-torch-multiprocess-spawn-and-simplequeue/69674/2
         # https://discuss.pytorch.org/t/return-from-mp-spawn/94302/2
@@ -72,6 +82,8 @@ def run(
                 "port": port,
                 "nproc": nproc,
                 "offset": group_offset,
+                "worker": 0,
+                "gpu_id": ",".join([str(i) for i in range(nproc)]),
             }
         )
         kwargs = {
