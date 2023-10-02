@@ -494,7 +494,7 @@ class Trainer(AbstractTrainer):
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
-                    self.logger.info(valid_result_output)
+                    # self.logger.info(valid_result_output)
                 self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
                 self.wandblogger.log_metrics(
                     {**valid_result, "valid_step": valid_step}, head="valid"
@@ -1081,7 +1081,7 @@ class DecisionTreeTrainer(AbstractTrainer):
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
-                    self.logger.info(valid_result_output)
+                    # self.logger.info(valid_result_output)
                 self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
 
                 if update_flag:
@@ -1431,7 +1431,7 @@ class NCLTrainer(Trainer):
                 )
                 if verbose:
                     self.logger.info(valid_score_output)
-                    self.logger.info(valid_result_output)
+                    # self.logger.info(valid_result_output)
                 self.tensorboard.add_scalar("Vaild_score", valid_score, epoch_idx)
 
                 if update_flag:
