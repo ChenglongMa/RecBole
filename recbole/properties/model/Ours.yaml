@@ -7,6 +7,7 @@ attn_dropout_prob: 0.5          # (float) The probability of an attention score 
 hidden_act: 'gelu'              # (str) The activation function in feed-forward layer.
 layer_norm_eps: 1e-12           # (float) A value added to the denominator for numerical stability.
 
-loss_type: 'BPR'                 # (str)  The type of loss function. Range in ['BPR', 'CE'].
+loss_type: 'CE'                 # (str)  The type of loss function. Range in ['BPR', 'CE'].
 
 position_emb_scale: 10             # (float) The scale of position embedding.
+decay_rate: 1                      # (float) The decay rate of position embedding.

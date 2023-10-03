@@ -37,17 +37,22 @@ class Ours(SequentialRecommender):
         self.layer_norm_eps = config["layer_norm_eps"]
 
         self.position_emb_scale = config["position_emb_scale"]
+        self.decay_rate = config["decay_rate"]
 
         # define layers and loss type
         # self.user_embedding = nn.Embedding(self.n_user, self.embedding_size)
-        self.item_embedding = nn.Embedding(self.n_items, self.embedding_size, padding_idx=0)
+        self.item_embedding = nn.Embedding(
+            self.n_items, self.embedding_size, padding_idx=0
+        )
         # self.embedding_seq_item = nn.Embedding(
         #     self.n_items, self.embedding_size, padding_idx=0
         # )
 
         # new layers
         self.max_position_length = self.position_ids(dataset.time_diff)
-        self.position_embedding = nn.Embedding(self.max_position_length, self.embedding_size)
+        self.position_embedding = nn.Embedding(
+            self.max_position_length, self.embedding_size
+        )
 
         # self.attention_layer = TransformerEncoderLayer(d_model=self.embedding_size, nhead=8, batch_first=True)
         self.trm_encoder = TransformerEncoder(
@@ -91,7 +96,7 @@ class Ours(SequentialRecommender):
             module.bias.data.zero_()
 
     def position_ids(self, time_diff):
-        ids = np.ceil(self.position_emb_scale * np.log(time_diff + 1))
+        ids = np.ceil(self.position_emb_scale * np.log(self.decay_rate * time_diff + 1))
         if isinstance(time_diff, torch.Tensor):
             return ids.long()
         return ids.astype(int)
