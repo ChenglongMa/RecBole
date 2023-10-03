@@ -7,7 +7,7 @@ import os
 from setuptools import setup, find_packages
 
 install_requires = [
-    "torch>=1.10.0",
+    # "torch>=1.10.0",
     "numpy>=1.17.2",
     "scipy>=1.6.0",
     "pandas>=1.0.5",
@@ -20,6 +20,8 @@ install_requires = [
     "thop>=0.1.1.post2207130030",
     "tabulate>=0.8.10",
     "plotly>=4.0.0",
+    "texttable>=1.6.2",
+    "ray[data,train,tune,serve]>=2.7.0",
 ]
 
 setup_requires = []

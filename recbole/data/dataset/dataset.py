@@ -2173,7 +2173,7 @@ class Dataset(torch.utils.data.Dataset):
             save_dir, f'{self.config["dataset"]}-{filename}.csv'
         )
         if os.path.exists(file):
-            self.logger.info(set_color("Dataset has existed ", "pink") + f"[{file}]")
+            self.logger.warning(set_color("Dataset has existed ", "pink") + f"[{file}]")
             return
         self.logger.info(
             set_color("Saving dataset into ", "pink") + f"[{file}]"
