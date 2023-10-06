@@ -48,8 +48,10 @@ class MaskItemSequence:
 
     def __init__(self, config):
         self.ITEM_SEQ = config["ITEM_ID_FIELD"] + config["LIST_SUFFIX"]
+        self.TIME_SEQ = config["TIME_FIELD"] + config["LIST_SUFFIX"]
         self.ITEM_ID = config["ITEM_ID_FIELD"]
         self.MASK_ITEM_SEQ = "Mask_" + self.ITEM_SEQ
+        self.MASK_TIME_SEQ = "Mask_" + self.TIME_SEQ
         self.POS_ITEMS = "Pos_" + config["ITEM_ID_FIELD"]
         self.NEG_ITEMS = "Neg_" + config["ITEM_ID_FIELD"]
         self.max_seq_length = config["MAX_ITEM_LIST_LENGTH"]
@@ -59,6 +61,7 @@ class MaskItemSequence:
         self.MASK_INDEX = "MASK_INDEX"
         config["MASK_INDEX"] = "MASK_INDEX"
         config["MASK_ITEM_SEQ"] = self.MASK_ITEM_SEQ
+        config["MASK_TIME_SEQ"] = self.MASK_TIME_SEQ
         config["POS_ITEMS"] = self.POS_ITEMS
         config["NEG_ITEMS"] = self.NEG_ITEMS
         self.ITEM_SEQ_LEN = config["ITEM_LIST_LENGTH_FIELD"]
@@ -78,14 +81,19 @@ class MaskItemSequence:
 
     def _append_mask_last(self, interaction, n_items, device):
         batch_size = interaction[self.ITEM_SEQ].size(0)
-        pos_items, neg_items, masked_index, masked_item_sequence = [], [], [], []
+        pos_items, neg_items, masked_index, masked_item_sequence, masked_time_sequence = [], [], [], [], []
         seq_instance = interaction[self.ITEM_SEQ].cpu().numpy().tolist()
+        time_seq_instance = interaction[self.TIME_SEQ].cpu().numpy().tolist()
         item_seq_len = interaction[self.ITEM_SEQ_LEN].cpu().numpy().tolist()
-        for instance, lens in zip(seq_instance, item_seq_len):
+        for instance, time_seq, lens in zip(seq_instance, time_seq_instance, item_seq_len):
             mask_seq = instance.copy()
+            mask_time_seq = time_seq.copy()
             ext = instance[lens - 1]
+            time_ext = time_seq[lens - 1]
             mask_seq[lens - 1] = n_items
+            mask_time_seq[lens - 1] = -1  # TODO: check what to append here
             masked_item_sequence.append(mask_seq)
+            masked_time_sequence.append(mask_time_seq)
             pos_items.append(self._padding_sequence([ext], self.mask_item_length))
             neg_items.append(
                 self._padding_sequence(
@@ -98,6 +106,9 @@ class MaskItemSequence:
         # [B Len]
         masked_item_sequence = torch.tensor(
             masked_item_sequence, dtype=torch.long, device=device
+        ).view(batch_size, -1)
+        masked_time_sequence = torch.tensor(
+            masked_time_sequence, dtype=torch.long, device=device
         ).view(batch_size, -1)
         # [B mask_len]
         pos_items = torch.tensor(pos_items, dtype=torch.long, device=device).view(
@@ -113,6 +124,7 @@ class MaskItemSequence:
         )
         new_dict = {
             self.MASK_ITEM_SEQ: masked_item_sequence,
+            self.MASK_TIME_SEQ: masked_time_sequence,
             self.POS_ITEMS: pos_items,
             self.NEG_ITEMS: neg_items,
             self.MASK_INDEX: masked_index,
@@ -123,14 +135,17 @@ class MaskItemSequence:
 
     def __call__(self, dataset, interaction):
         item_seq = interaction[self.ITEM_SEQ]
+        time_seq = interaction[self.TIME_SEQ]
         device = item_seq.device
         batch_size = item_seq.size(0)
         n_items = dataset.num(self.ITEM_ID)
         sequence_instances = item_seq.cpu().numpy().tolist()
+        time_seq_instances = time_seq.cpu().numpy().tolist()
 
         # Masked Item Prediction
         # [B * Len]
         masked_item_sequence = []
+        masked_time_sequence = []
         pos_items = []
         neg_items = []
         masked_index = []
@@ -138,9 +153,10 @@ class MaskItemSequence:
         if random.random() < self.ft_ratio:
             interaction = self._append_mask_last(interaction, n_items, device)
         else:
-            for instance in sequence_instances:
+            for instance, time_seq in zip(sequence_instances, time_seq_instances):
                 # WE MUST USE 'copy()' HERE!
                 masked_sequence = instance.copy()
+                masked_time_seq = time_seq.copy()
                 pos_item = []
                 neg_item = []
                 index_ids = []
@@ -153,9 +169,11 @@ class MaskItemSequence:
                         pos_item.append(item)
                         neg_item.append(self._neg_sample(instance, n_items))
                         masked_sequence[index_id] = n_items
+                        masked_time_seq[index_id] = -1  # TODO: check what to append here
                         index_ids.append(index_id)
 
                 masked_item_sequence.append(masked_sequence)
+                masked_time_sequence.append(masked_time_seq)
                 pos_items.append(
                     self._padding_sequence(pos_item, self.mask_item_length)
                 )
@@ -169,6 +187,9 @@ class MaskItemSequence:
             # [B Len]
             masked_item_sequence = torch.tensor(
                 masked_item_sequence, dtype=torch.long, device=device
+            ).view(batch_size, -1)
+            masked_time_sequence = torch.tensor(
+                masked_time_sequence, dtype=torch.long, device=device
             ).view(batch_size, -1)
             # [B mask_len]
             pos_items = torch.tensor(pos_items, dtype=torch.long, device=device).view(
@@ -184,6 +205,7 @@ class MaskItemSequence:
             ).view(batch_size, -1)
             new_dict = {
                 self.MASK_ITEM_SEQ: masked_item_sequence,
+                self.MASK_TIME_SEQ: masked_time_sequence,
                 self.POS_ITEMS: pos_items,
                 self.NEG_ITEMS: neg_items,
                 self.MASK_INDEX: masked_index,

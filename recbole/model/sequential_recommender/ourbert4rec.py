@@ -23,6 +23,7 @@ Reference code:
 
 import random
 
+import numpy as np
 import torch
 from torch import nn
 
@@ -59,6 +60,7 @@ class OurBERT4Rec(SequentialRecommender):
         self.mask_ratio = config["mask_ratio"]
 
         self.MASK_ITEM_SEQ = config["MASK_ITEM_SEQ"]
+        self.MASK_TIME_SEQ = config["MASK_TIME_SEQ"]
         self.POS_ITEMS = config["POS_ITEMS"]
         self.NEG_ITEMS = config["NEG_ITEMS"]
         self.MASK_INDEX = config["MASK_INDEX"]
@@ -68,15 +70,23 @@ class OurBERT4Rec(SequentialRecommender):
 
         # load dataset info
         self.mask_token = self.n_items
+        self.time_mask_token = -1
         self.mask_item_length = int(self.mask_ratio * self.max_seq_length)
 
         # define layers and loss
         self.item_embedding = nn.Embedding(
             self.n_items + 1, self.hidden_size, padding_idx=0
         )  # mask token add 1
+        # mcl: update
+        self.max_position_length = self.position_ids(dataset.time_diff)
         self.position_embedding = nn.Embedding(
-            self.max_seq_length, self.hidden_size
-        )  # add mask_token at the last
+            self.max_position_length, self.hidden_size
+        )
+
+        # self.position_embedding = nn.Embedding(
+        #     self.max_seq_length, self.hidden_size
+        # )  # add mask_token at the last
+        # mcl: end
         self.trm_encoder = TransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
@@ -104,6 +114,12 @@ class OurBERT4Rec(SequentialRecommender):
         # parameters initialization
         self.apply(self._init_weights)
 
+    def position_ids(self, time_diff):
+        ids = np.ceil(self.position_emb_scale * np.log(self.decay_rate * time_diff + 1))
+        if isinstance(time_diff, torch.Tensor):
+            return ids.long()
+        return ids.astype(int)
+
     def _init_weights(self, module):
         """Initialize the weights"""
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -116,7 +132,7 @@ class OurBERT4Rec(SequentialRecommender):
         if isinstance(module, nn.Linear) and module.bias is not None:
             module.bias.data.zero_()
 
-    def reconstruct_test_data(self, item_seq, item_seq_len):
+    def reconstruct_test_data(self, item_seq, time_seq, item_seq_len):
         """
         Add mask token at the last position according to the lengths of item_seq
         """
@@ -124,17 +140,26 @@ class OurBERT4Rec(SequentialRecommender):
             item_seq.size(0), dtype=torch.long, device=item_seq.device
         )  # [B]
         item_seq = torch.cat((item_seq, padding.unsqueeze(-1)), dim=-1)  # [B max_len+1]
+        time_seq = torch.cat((time_seq, padding.unsqueeze(-1)), dim=-1)  # [B max_len+1]
         for batch_id, last_position in enumerate(item_seq_len):
             item_seq[batch_id][last_position] = self.mask_token
+            time_seq[batch_id][last_position] = self.time_mask_token
         item_seq = item_seq[:, 1:]
-        return item_seq
+        time_seq = time_seq[:, 1:]
+        return item_seq, time_seq
 
-    def forward(self, item_seq):
-        position_ids = torch.arange(
-            item_seq.size(1), dtype=torch.long, device=item_seq.device
-        )
-        position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
+    def forward(self, item_seq, time_seq=None):
+        # mcl: update
+        # position_ids = torch.arange(
+        #     item_seq.size(1), dtype=torch.long, device=item_seq.device
+        # )
+        # position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
+        # position_embedding = self.position_embedding(position_ids)
+        time_diffs = (time_seq.max(dim=1, keepdim=True)[0] - time_seq).cpu()
+        position_ids = self.position_ids(time_diffs).to(time_seq.device)
+        position_ids = position_ids.clip(min=0, max=self.max_position_length - 1)
         position_embedding = self.position_embedding(position_ids)
+        # mcl: end
         item_emb = self.item_embedding(item_seq)
         input_emb = item_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
@@ -174,11 +199,12 @@ class OurBERT4Rec(SequentialRecommender):
 
     def calculate_loss(self, interaction):
         masked_item_seq = interaction[self.MASK_ITEM_SEQ]
+        masked_time_seq = interaction[self.MASK_TIME_SEQ]
         pos_items = interaction[self.POS_ITEMS]
         neg_items = interaction[self.NEG_ITEMS]
         masked_index = interaction[self.MASK_INDEX]
 
-        seq_output = self.forward(masked_item_seq)
+        seq_output = self.forward(masked_item_seq, masked_time_seq)
         pred_index_map = self.multi_hot_embed(
             masked_index, masked_item_seq.size(-1)
         )  # [B*mask_len max_len]
@@ -226,10 +252,11 @@ class OurBERT4Rec(SequentialRecommender):
 
     def predict(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
+        time_seq = interaction[self.TIME_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         test_item = interaction[self.ITEM_ID]
-        item_seq = self.reconstruct_test_data(item_seq, item_seq_len)
-        seq_output = self.forward(item_seq)
+        item_seq, time_seq = self.reconstruct_test_data(item_seq, time_seq, item_seq_len)
+        seq_output = self.forward(item_seq, time_seq)
         seq_output = self.gather_indexes(seq_output, item_seq_len - 1)  # [B H]
         test_item_emb = self.item_embedding(test_item)
         scores = (torch.mul(seq_output, test_item_emb)).sum(dim=1) + self.output_bias[
@@ -239,9 +266,10 @@ class OurBERT4Rec(SequentialRecommender):
 
     def full_sort_predict(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
+        time_seq = interaction[self.TIME_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
-        item_seq = self.reconstruct_test_data(item_seq, item_seq_len)
-        seq_output = self.forward(item_seq)
+        item_seq, time_seq = self.reconstruct_test_data(item_seq, time_seq, item_seq_len)
+        seq_output = self.forward(item_seq, time_seq)
         seq_output = self.gather_indexes(seq_output, item_seq_len - 1)  # [B H]
         test_items_emb = self.item_embedding.weight[
             : self.n_items

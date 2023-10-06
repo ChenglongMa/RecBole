@@ -36,6 +36,8 @@ from recbole.utils import (
 import torch.multiprocessing as mp
 import torch
 
+def is_windows():
+    return sys.platform in ["win32", "cygwin"]
 
 def run(
     model,
@@ -50,10 +52,10 @@ def run(
     group_offset=0,
 ):
     if nproc == 1 and world_size <= 0:
-        mp.set_sharing_strategy("file_system")
-
         config_dict = config_dict or {}
-        config_dict["worker"] = os.cpu_count()
+        config_dict["worker"] = 0 if is_windows() else os.cpu_count()
+        if config_dict["worker"] > 1:
+            mp.set_sharing_strategy("file_system")
         print(f'Using {config_dict["worker"]} processes')
 
         res = run_recbole(
