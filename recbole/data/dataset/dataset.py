@@ -2178,11 +2178,13 @@ class Dataset(torch.utils.data.Dataset):
         self.logger.info(
             set_color("Saving dataset into ", "pink") + f"[{file}]"
         )
-        rating_field = self.config["RATING_FIELD"]
-        df = pd.DataFrame({
+        data = {
             self.uid_field: self.id2token(self.uid_field, self.inter_feat[self.uid_field]),
             self.iid_field: self.id2token(self.iid_field, self.inter_feat[self.iid_field]),
-            rating_field: self.inter_feat[rating_field],
             self.time_field: self.inter_feat[self.time_field]
-        })
+        }
+        rating_field = self.config["RATING_FIELD"]
+        if rating_field is not None and rating_field in self.inter_feat:
+            data[rating_field] = self.inter_feat[rating_field]
+        df = pd.DataFrame(data)
         df.to_csv(file, index=False)
