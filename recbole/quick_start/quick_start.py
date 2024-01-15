@@ -24,6 +24,7 @@ from recbole.config import Config
 from recbole.data import (
     create_dataset,
     data_preparation,
+    get_dataset_name
 )
 from recbole.utils import (
     init_logger,
@@ -36,20 +37,22 @@ from recbole.utils import (
 import torch.multiprocessing as mp
 import torch
 
+
 def is_windows():
     return sys.platform in ["win32", "cygwin"]
 
+
 def run(
-    model,
-    dataset,
-    config_file_list=None,
-    config_dict=None,
-    saved=True,
-    nproc=1,
-    world_size=-1,
-    ip="localhost",
-    port="5678",
-    group_offset=0,
+        model,
+        dataset,
+        config_file_list=None,
+        config_dict=None,
+        saved=True,
+        nproc=1,
+        world_size=-1,
+        ip="localhost",
+        port="5678",
+        group_offset=0,
 ):
     if nproc == 1 and world_size <= 0:
         config_dict = config_dict or {}
@@ -106,12 +109,12 @@ def run(
 
 
 def run_recbole(
-    model=None,
-    dataset=None,
-    config_file_list=None,
-    config_dict=None,
-    saved=True,
-    queue=None,
+        model=None,
+        dataset=None,
+        config_file_list=None,
+        config_dict=None,
+        saved=True,
+        queue=None,
 ):
     r"""A fast running api, which includes the complete process of
     training and testing a model on a specified dataset
@@ -202,7 +205,7 @@ def save_results(config, test_result, topk_results):
     now = time.strftime("%y%m%d%H%M%S")
     eval_results = []
     model_name = config["model"]
-    dataset_name = config["dataset"]
+    dataset_name = get_dataset_name(config)
 
     for metric, value in test_result.items():
         eval_results.append([model_name, metric, value])

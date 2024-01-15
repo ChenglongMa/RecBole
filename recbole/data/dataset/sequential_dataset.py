@@ -51,7 +51,7 @@ class SequentialDataset(Dataset):
     def _aug_presets(self):
         list_suffix = self.config["LIST_SUFFIX"]
         for field in self.inter_feat:
-            if field != self.uid_field:
+            if field != self.uid_field and not field.endswith(list_suffix):
                 list_field = field + list_suffix
                 setattr(self, f"{field}_list_field", list_field)
                 ftype = self.field2type[field]
@@ -101,16 +101,21 @@ class SequentialDataset(Dataset):
         last_uid = None
         uid_list, item_list_index, target_index, item_list_length = [], [], [], []
         seq_start = 0
+        # `i` is the current index in interaction, `seq_start` is the start index of current sequence
         for i, uid in enumerate(self.inter_feat[self.uid_field].numpy()):
             if last_uid != uid:
                 last_uid = uid
                 seq_start = i
             else:
                 if i - seq_start > max_item_list_len:
+                    # Move the start index of sequence to the next item if the length of sequence is larger than max_item_list_len
                     seq_start += 1
                 uid_list.append(uid)
+                # `slice` is used to get the index of item list
                 item_list_index.append(slice(seq_start, i))
+                # `i` is the index of target item
                 target_index.append(i)
+                # `i - seq_start` is the length of item list
                 item_list_length.append(i - seq_start)
 
         uid_list = np.array(uid_list)
@@ -118,6 +123,7 @@ class SequentialDataset(Dataset):
         target_index = np.array(target_index)
         item_list_length = np.array(item_list_length, dtype=np.int64)
 
+        # $new_length = len(interaction) - len(users)$ because the first interaction of each user is not counted
         new_length = len(item_list_index)
         new_data = self.inter_feat[target_index]
         new_dict = {
@@ -125,7 +131,7 @@ class SequentialDataset(Dataset):
         }
 
         for field in self.inter_feat:
-            if field != self.uid_field:
+            if field != self.uid_field and not field.endswith(self.config["LIST_SUFFIX"]):
                 list_field = getattr(self, f"{field}_list_field")
                 list_len = self.field2seqlen[list_field]
                 shape = (

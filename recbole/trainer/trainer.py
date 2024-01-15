@@ -31,6 +31,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_
 from tqdm import tqdm
 import torch.cuda.amp as amp
 
+from recbole.data.utils import get_dataset_name
 from recbole.data.interaction import Interaction
 from recbole.data.dataloader import FullSortEvalDataLoader
 from recbole.evaluator import Evaluator, Collector, DataStruct
@@ -619,7 +620,7 @@ class Trainer(AbstractTrainer):
         # mcl: added
         topk = max(self.config["topk"])
         eval_dataset = eval_data.dataset
-        dataset_name = eval_dataset.dataset_name
+        # dataset_name = eval_dataset.dataset_name
         uid_field, iid_field, score_field = (
             eval_dataset.uid_field,
             eval_dataset.iid_field,
@@ -835,7 +836,7 @@ class PretrainTrainer(Trainer):
                 saved_model_file = os.path.join(
                     self.checkpoint_dir,
                     "{}-{}-{}.pth".format(
-                        self.config["model"], self.config["dataset"], str(epoch_idx + 1)
+                        self.config["model"], get_dataset_name(self.config), str(epoch_idx + 1)
                     ),
                 )
                 self.save_pretrained_model(epoch_idx, saved_model_file)

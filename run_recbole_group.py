@@ -66,7 +66,7 @@ if __name__ == "__main__":
         test_res_dict = {"Model": model}
         result = run(
             model,
-            args.dataset,
+            dataset,
             config_file_list=config_file_list,
             nproc=args.nproc,
             world_size=args.world_size,

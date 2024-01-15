@@ -13,9 +13,8 @@ recbole.data.dataset
 """
 
 import copy
-import pickle
 import os
-import yaml
+import pickle
 from collections import Counter, defaultdict
 from logging import getLogger
 
@@ -23,12 +22,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.utils.rnn as rnn_utils
+import yaml
 from scipy.sparse import coo_matrix
+
+from recbole.data.utils import get_dataset_name
 from recbole.data.interaction import Interaction
 from recbole.utils import (
     FeatureSource,
     FeatureType,
-    get_local_time,
     set_color,
     ensure_dir,
 )
@@ -103,7 +104,7 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.dataset_name = config["dataset"]
+        self.dataset_name = get_dataset_name(config)
         self.logger = getLogger()
         self._from_scratch()
 
@@ -1817,7 +1818,7 @@ class Dataset(torch.utils.data.Dataset):
         save_dir = self.config["checkpoint_dir"]
         ensure_dir(save_dir)
         file = os.path.join(
-            save_dir, f'{self.config["dataset"]}-{self.__class__.__name__}.pth'
+            save_dir, f'{get_dataset_name(self.config)}-{self.__class__.__name__}.pth'
         )
         self.logger.info(
             set_color("Saving filtered dataset into ", "pink") + f"[{file}]"
@@ -2170,7 +2171,7 @@ class Dataset(torch.utils.data.Dataset):
         save_dir = self.config["checkpoint_dir"]
         ensure_dir(save_dir)
         file = os.path.join(
-            save_dir, f'{self.config["dataset"]}-{filename}.csv'
+            save_dir, f'{get_dataset_name(self.config)}-{filename}.csv'
         )
         if os.path.exists(file):
             self.logger.warning(set_color("Dataset has existed ", "pink") + f"[{file}]")

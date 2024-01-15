@@ -80,7 +80,7 @@ def init_logger(config):
     config_str = "".join([str(key) for key in config.final_config_dict.values()])
     md5 = hashlib.md5(config_str.encode(encoding="utf-8")).hexdigest()[:6]
     logfilename = "{}/{}-{}-{}-{}.log".format(
-        config["model"], config["model"], config["dataset"], get_local_time(), md5
+        config["model"], config["model"], config["dataset_filename"] or config["dataset"], get_local_time(), md5
     )
 
     logfilepath = os.path.join(LOGROOT, logfilename)

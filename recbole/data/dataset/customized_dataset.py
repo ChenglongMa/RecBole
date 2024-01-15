@@ -123,8 +123,8 @@ class DIENDataset(SequentialDataset):
                     else (new_length,) + list_len
                 )
                 if (
-                        self.field2type[field] in [FeatureType.FLOAT, FeatureType.FLOAT_SEQ]
-                        and field in self.config["numerical_features"]
+                    self.field2type[field] in [FeatureType.FLOAT, FeatureType.FLOAT_SEQ]
+                    and field in self.config["numerical_features"]
                 ):
                     shape += (2,)
                 # DIEN
@@ -139,7 +139,7 @@ class DIENDataset(SequentialDataset):
 
                 value = self.inter_feat[field]
                 for i, (index, length) in enumerate(
-                        zip(item_list_index, item_list_length)
+                    zip(item_list_index, item_list_length)
                 ):
                     new_dict[list_field][i][:length] = value[index]
 
@@ -147,10 +147,10 @@ class DIENDataset(SequentialDataset):
                 if field == self.iid_field:
                     new_dict[self.neg_item_list_field] = torch.zeros(shape, dtype=dtype)
                     for i, (index, length) in enumerate(
-                            zip(item_list_index, item_list_length)
+                        zip(item_list_index, item_list_length)
                     ):
                         new_dict[self.neg_item_list_field][i][
-                        :length
+                            :length
                         ] = self.neg_item_list[index]
                 # End DIEN
 
@@ -178,7 +178,9 @@ class MaskedSequentialDataset(SequentialDataset):
         super()._get_field_from_config()
         list_suffix = self.config["LIST_SUFFIX"]
         neg_prefix = self.config["NEG_PREFIX"]
-        self.neg_item_list_field = neg_prefix + self.iid_field + list_suffix  # default: neg_item_list
+        self.neg_item_list_field = (
+            neg_prefix + self.iid_field + list_suffix
+        )  # default: neg_item_list
         self.mask_field = self.config['MASK_FIELD']
 
     def _benchmark_presets(self):
@@ -187,10 +189,14 @@ class MaskedSequentialDataset(SequentialDataset):
             if field + list_suffix in self.inter_feat:
                 list_field = field + list_suffix
                 setattr(self, f"{field}_list_field", list_field)
-        self.set_field_property(self.item_list_length_field, FeatureType.TOKEN, FeatureSource.INTERACTION, 1)
+        self.set_field_property(
+            self.item_list_length_field, FeatureType.TOKEN, FeatureSource.INTERACTION, 1
+        )
 
         if hasattr(self, 'item_id_list_field'):
-            self.inter_feat[self.item_list_length_field] = self.inter_feat[self.item_id_list_field].agg(len)
+            self.inter_feat[self.item_list_length_field] = self.inter_feat[
+                self.item_id_list_field
+            ].agg(len)
         else:
             for feat_name in self.feat_name_list:
                 feat = getattr(self, feat_name)
@@ -222,7 +228,9 @@ class MaskedSequentialDataset(SequentialDataset):
         # mcl: added
         # self.seq_sampler = SeqSampler(self)
         seq_sampler = MaskedSeqSampler(self, distribution="uniform", alpha=1.0)
-        neg_item_list, neg_item_masks = seq_sampler.sample_neg_sequence(self.inter_feat[self.iid_field].numpy())
+        neg_item_list, neg_item_masks = seq_sampler.sample_neg_sequence(
+            self.inter_feat[self.iid_field].numpy()
+        )
 
         self._aug_presets()
 
@@ -265,8 +273,8 @@ class MaskedSequentialDataset(SequentialDataset):
                     else (new_length,) + list_len
                 )
                 if (
-                        self.field2type[field] in [FeatureType.FLOAT, FeatureType.FLOAT_SEQ]
-                        and field in self.config["numerical_features"]
+                    self.field2type[field] in [FeatureType.FLOAT, FeatureType.FLOAT_SEQ]
+                    and field in self.config["numerical_features"]
                 ):
                     shape += (2,)
                 # TICEN
@@ -281,7 +289,7 @@ class MaskedSequentialDataset(SequentialDataset):
 
                 value = self.inter_feat[field]
                 for i, (index, length) in enumerate(
-                        zip(item_list_index, item_list_length)
+                    zip(item_list_index, item_list_length)
                 ):
                     new_dict[list_field][i][:length] = value[index]
 
@@ -289,8 +297,12 @@ class MaskedSequentialDataset(SequentialDataset):
                 if field == self.iid_field:
                     new_dict[self.neg_item_list_field] = torch.zeros(shape, dtype=dtype)
                     new_dict[self.mask_field] = torch.zeros(shape, dtype=torch.bool)
-                    for i, (index, length) in enumerate(zip(item_list_index, item_list_length)):
-                        new_dict[self.neg_item_list_field][i][:length] = neg_item_list[index]
+                    for i, (index, length) in enumerate(
+                        zip(item_list_index, item_list_length)
+                    ):
+                        new_dict[self.neg_item_list_field][i][:length] = neg_item_list[
+                            index
+                        ]
                         new_dict[self.mask_field][i][:length] = neg_item_masks[index]
                 # End TICEN
 
@@ -299,14 +311,14 @@ class MaskedSequentialDataset(SequentialDataset):
 
     def build(self):
         """Processing dataset according to evaluation setting, including Group, Order and Split.
-                See :class:`~recbole.config.eval_setting.EvalSetting` for details.
+        See :class:`~recbole.config.eval_setting.EvalSetting` for details.
 
-                Args:
-                    eval_setting (:class:`~recbole.config.eval_setting.EvalSetting`):
-                        Object contains evaluation settings, which guide the data processing procedure.
+        Args:
+            eval_setting (:class:`~recbole.config.eval_setting.EvalSetting`):
+                Object contains evaluation settings, which guide the data processing procedure.
 
-                Returns:
-                    list: List of built :class:`Dataset`.
+        Returns:
+            list: List of built :class:`Dataset`.
         """
         if self.benchmark_filename_list is not None:
             self._drop_unused_col()
@@ -326,7 +338,10 @@ class MaskedSequentialDataset(SequentialDataset):
             for i, phase in enumerate(self.inter_feat[phase_field].numpy()):
                 phase_index[self.field2id_token[phase_field][phase]].append(i)
 
-            datasets = [self.copy(self.inter_feat[phase_index[key]]) for key in [phase_train, phase_valid, phase_test]]
+            datasets = [
+                self.copy(self.inter_feat[phase_index[key]])
+                for key in [phase_train, phase_valid, phase_test]
+            ]
             return datasets
 
         ordering_args = self.config["eval_args"]["order"]

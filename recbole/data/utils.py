@@ -53,7 +53,7 @@ def create_dataset(config):
         dataset_class = getattr(dataset_module, type2class[model_type])
 
     default_file = os.path.join(
-        config["checkpoint_dir"], f'{config["dataset"]}-{dataset_class.__name__}.pth'
+        config["checkpoint_dir"], f'{get_dataset_name(config)}-{dataset_class.__name__}.pth'
     )
     file = config["dataset_save_path"] or default_file
     if os.path.exists(file):
@@ -84,7 +84,7 @@ def save_split_dataloaders(config, dataloaders):
     """
     ensure_dir(config["checkpoint_dir"])
     save_path = config["checkpoint_dir"]
-    saved_dataloaders_file = f'{config["dataset"]}-for-{config["model"]}-dataloader.pth'
+    saved_dataloaders_file = f'{get_dataset_name(config)}-for-{config["model"]}-dataloader.pth'
     file_path = os.path.join(save_path, saved_dataloaders_file)
     logger = getLogger()
     logger.info(set_color("Saving split dataloaders into", "pink") + f": [{file_path}]")
@@ -112,7 +112,7 @@ def load_split_dataloaders(config):
 
     default_file = os.path.join(
         config["checkpoint_dir"],
-        f'{config["dataset"]}-for-{config["model"]}-dataloader.pth',
+        f'{get_dataset_name(config)}-for-{config["model"]}-dataloader.pth',
     )
     dataloaders_save_path = config["dataloaders_save_path"] or default_file
     if not os.path.exists(dataloaders_save_path):
@@ -377,3 +377,23 @@ def create_samplers(config, dataset, built_datasets):
     )
     test_sampler = test_sampler.set_phase("test") if test_sampler else None
     return train_sampler, valid_sampler, test_sampler
+
+
+def get_dataset_name(config):
+    """Get dataset name from config.
+
+    Args:
+        config (Config): An instance object of Config, used to record parameter information.
+        - "dataset_filename" (str): The filename of dataset.
+        - "dataset" (str): The name of dataset.
+        - They are shown in the following form:
+            - dataset/"dataset"/"dataset_filename"[.benchmark].[inter|user|item]
+            - recbole/properties/dataset/"dataset".yaml
+        - NB:
+            1. "dataset_filename" has a higher priority than "dataset".
+            2. If "dataset_filename" is None, "dataset" will be used as dataset name.
+
+    Returns:
+        str: The name of dataset.
+    """
+    return config["dataset_filename"] or config["dataset"]
