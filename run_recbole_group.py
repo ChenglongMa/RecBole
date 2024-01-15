@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset", "-d", type=str, default="ml-100k", help="name of datasets"
     )
+    parser.add_argument("--dataset_filename", type=str, default=None, help="filename of dataset")
     parser.add_argument("--config_files", type=str, default=None, help="config files")
     parser.add_argument(
         "--valid_latex", type=str, default="./latex/valid.tex", help="config files"
@@ -67,6 +68,7 @@ if __name__ == "__main__":
         result = run(
             model,
             dataset,
+            config_dict={"dataset_filename": args.dataset_filename},
             config_file_list=config_file_list,
             nproc=args.nproc,
             world_size=args.world_size,
