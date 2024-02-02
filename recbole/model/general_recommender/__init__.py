@@ -13,7 +13,6 @@ from recbole.model.general_recommender.line import LINE
 from recbole.model.general_recommender.macridvae import MacridVAE
 from recbole.model.general_recommender.multidae import MultiDAE
 from recbole.model.general_recommender.multivae import MultiVAE
-from recbole.model.general_recommender.enmf import ENMF
 from recbole.model.general_recommender.nais import NAIS
 from recbole.model.general_recommender.ncl import NCL
 from recbole.model.general_recommender.neumf import NeuMF
@@ -21,6 +20,7 @@ from recbole.model.general_recommender.ngcf import NGCF
 from recbole.model.general_recommender.nncf import NNCF
 from recbole.model.general_recommender.pop import Pop
 from recbole.model.general_recommender.ract import RaCT
+from recbole.model.general_recommender.random import Random
 from recbole.model.general_recommender.recvae import RecVAE
 from recbole.model.general_recommender.slimelastic import SLIMElastic
 from recbole.model.general_recommender.spectralcf import SpectralCF
@@ -28,3 +28,5 @@ from recbole.model.general_recommender.nceplrec import NCEPLRec
 from recbole.model.general_recommender.sgl import SGL
 from recbole.model.general_recommender.admmslim import ADMMSLIM
 from recbole.model.general_recommender.simplex import SimpleX
+from recbole.model.general_recommender.diffrec import DiffRec
+from recbole.model.general_recommender.ldiffrec import LDiffRec

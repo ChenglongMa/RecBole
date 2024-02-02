@@ -14,6 +14,8 @@ recbole.quick_start
 import logging
 import os
 import sys
+import torch.distributed as dist
+from collections.abc import MutableMapping
 import time
 from logging import getLogger
 
@@ -26,12 +28,14 @@ from recbole.data import (
     data_preparation,
     get_dataset_name
 )
+from recbole.data.transform import construct_transform
 from recbole.utils import (
     init_logger,
     get_model,
     get_trainer,
     init_seed,
     set_color,
+    get_flops,
     get_environment,
 )
 import torch.multiprocessing as mp
@@ -43,16 +47,16 @@ def is_windows():
 
 
 def run(
-        model,
-        dataset,
-        config_file_list=None,
-        config_dict=None,
-        saved=True,
-        nproc=1,
-        world_size=-1,
-        ip="localhost",
-        port="5678",
-        group_offset=0,
+    model,
+    dataset,
+    config_file_list=None,
+    config_dict=None,
+    saved=True,
+    nproc=1,
+    world_size=-1,
+    ip="localhost",
+    port="5678",
+    group_offset=0,
 ):
     if nproc == 1 and world_size <= 0:
         config_dict = config_dict or {}
@@ -74,10 +78,11 @@ def run(
 
         if world_size == -1:
             world_size = nproc
+        import torch.multiprocessing as mp
 
         # Refer to https://discuss.pytorch.org/t/problems-with-torch-multiprocess-spawn-and-simplequeue/69674/2
         # https://discuss.pytorch.org/t/return-from-mp-spawn/94302/2
-        queue = mp.get_context('spawn').SimpleQueue()
+        queue = mp.get_context("spawn").SimpleQueue()
 
         config_dict = config_dict or {}
         config_dict.update(
@@ -109,12 +114,12 @@ def run(
 
 
 def run_recbole(
-        model=None,
-        dataset=None,
-        config_file_list=None,
-        config_dict=None,
-        saved=True,
-        queue=None,
+    model=None,
+    dataset=None,
+    config_file_list=None,
+    config_dict=None,
+    saved=True,
+    queue=None,
 ):
     r"""A fast running api, which includes the complete process of
     training and testing a model on a specified dataset
@@ -153,9 +158,9 @@ def run_recbole(
     model = get_model(config["model"])(config, train_data._dataset).to(config["device"])
     logger.info(model)
 
-    # transform = construct_transform(config)
-    # flops = get_flops(model, dataset, config["device"], logger, transform)
-    # logger.info(set_color("FLOPs", "blue") + f": {flops}")
+    transform = construct_transform(config)
+    flops = get_flops(model, dataset, config["device"], logger, transform)
+    logger.info(set_color("FLOPs", "blue") + f": {flops}")
 
     # trainer loading and initialization
     trainer = get_trainer(config["MODEL_TYPE"], config["model"])(config, model)
@@ -190,9 +195,8 @@ def run_recbole(
     }
 
     if not config["single_spec"]:
-        import torch.distributed as dist
-
         dist.destroy_process_group()
+
     if config["local_rank"] == 0 and queue is not None:
         queue.put(result)  # for multiprocessing, e.g., mp.spawn
 
@@ -233,6 +237,10 @@ def save_results(config, test_result, topk_results):
 
 def run_recboles(rank, *args):
     kwargs = args[-1]
+    if not isinstance(kwargs, MutableMapping):
+        raise ValueError(
+            f"The last argument of run_recboles should be a dict, but got {type(kwargs)}"
+        )
     kwargs["config_dict"] = kwargs.get("config_dict", {})
     kwargs["config_dict"]["local_rank"] = rank
     run_recbole(
