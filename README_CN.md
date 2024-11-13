@@ -277,17 +277,20 @@ NOTE: 我们的测试结果只给出了RecBole库中实现模型的大致时间�
   year      = {2021}
 }
 @inproceedings{recbole[2.0],
-  title={RecBole 2.0: Towards a More Up-to-Date Recommendation Library},
-  author={Zhao, Wayne Xin and Hou, Yupeng and Pan, Xingyu and Yang, Chen and Zhang, Zeyu and Lin, Zihan and Zhang, Jingsen and Bian, Shuqing and Tang, Jiakai and Sun, Wenqi and others},
-  booktitle={Proceedings of the 31st ACM International Conference on Information \& Knowledge Management},
-  pages={4722--4726},
-  year={2022}
+  author    = {Wayne Xin Zhao and Yupeng Hou and Xingyu Pan and Chen Yang and Zeyu Zhang and Zihan Lin and Jingsen Zhang and Shuqing Bian and Jiakai Tang and Wenqi Sun and Yushuo Chen and Lanling Xu and Gaowei Zhang and Zhen Tian and Changxin Tian and Shanlei Mu and Xinyan Fan and Xu Chen and Ji{-}Rong Wen},
+  title     = {RecBole 2.0: Towards a More Up-to-Date Recommendation Library},
+  booktitle = {{CIKM}},
+  pages     = {4722--4726},
+  publisher = {{ACM}},
+  year      = {2022}
 }
 @inproceedings{recbole[1.2.0],
-  author = {Xu, Lanling and Tian, Zhen and Zhang, Gaowei and Zhang, Junjie and Wang, Lei and Zheng, Bowen and Li, Yifan and Tang, Jiakai and Zhang, Zeyu and Hou, Yupeng and Pan, Xingyu and Zhao, Wayne Xin and Chen, Xu and Wen, Ji-Rong},
-  title = {Towards a More User-Friendly and Easy-to-Use Benchmark Library for Recommender Systems},
-  pages = {2837–2847},
-  year = {2023}
+  author    = {Lanling Xu and Zhen Tian and Gaowei Zhang and Junjie Zhang and Lei Wang and Bowen Zheng and Yifan Li and Jiakai Tang and Zeyu Zhang and Yupeng Hou and Xingyu Pan and Wayne Xin Zhao and Xu Chen and Ji{-}Rong Wen},
+  title     = {Towards a More User-Friendly and Easy-to-Use Benchmark Library for Recommender Systems},
+  booktitle = {{SIGIR}},
+  pages     = {2837--2847},
+  publisher = {{ACM}},
+  year      = {2023}
 }
 ```
 
@@ -306,3 +309,7 @@ RecBole由 [中国人民大学, 北京邮电大学, 华东师范大学](https://
 
 ## 免责声明
 RecBole 基于 [MIT License](./LICENSE) 进行开发，本项目的所有数据和代码只能被用于学术目的。
+
+## 致谢
+
+本成果受到国家自然科学基金重点项目（No. 61832017）支持。

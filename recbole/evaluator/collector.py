@@ -14,6 +14,7 @@ recbole.evaluator.collector
 
 from recbole.evaluator.register import Register
 import torch
+import copy
 
 
 class DataStruct(object):
@@ -41,18 +42,18 @@ class DataStruct(object):
 
     def set(self, name: str, value):
         self._data_dict[name] = value
-    
+
     def __iter__(self):
         return iter(self._data_dict.items())
 
     def update_tensor(self, name: str, value: torch.Tensor):
         if name not in self._data_dict:
-            self._data_dict[name] = value.cpu().clone().detach()
+            self._data_dict[name] = value.clone().detach()
         else:
             if not isinstance(self._data_dict[name], torch.Tensor):
                 raise ValueError("{} is not a tensor.".format(name))
             self._data_dict[name] = torch.cat(
-                (self._data_dict[name], value.cpu().clone().detach()), dim=0
+                (self._data_dict[name], value.clone().detach()), dim=0
             )
 
     def __str__(self):
@@ -194,7 +195,7 @@ class Collector(object):
         if self.register.need("data.label"):
             self.label_field = self.config["LABEL_FIELD"]
             self.data_struct.update_tensor(
-                "data.label", interaction[self.label_field]
+                "data.label", interaction[self.label_field].to(self.device)
             )
 
     def model_collect(self, model: torch.nn.Module):
@@ -217,13 +218,16 @@ class Collector(object):
 
         if self.register.need("data.label"):
             self.label_field = self.config["LABEL_FIELD"]
-            self.data_struct.update_tensor("data.label", data_label)
+            self.data_struct.update_tensor("data.label", data_label.to(self.device))
 
     def get_data_struct(self):
         """Get all the evaluation resource that been collected.
         And reset some of outdated resource.
         """
-        returned_struct = DataStruct(self.data_struct)
+        for key in self.data_struct._data_dict:
+            self.data_struct._data_dict[key] = self.data_struct._data_dict[key].cpu()
+        returned_struct = copy.deepcopy(self.data_struct)
+        # returned_struct = DataStruct(self.data_struct)
         for key in ["rec.topk", "rec.meanrank", "rec.score", "rec.items", "data.label"]:
             if key in self.data_struct:
                 del self.data_struct[key]

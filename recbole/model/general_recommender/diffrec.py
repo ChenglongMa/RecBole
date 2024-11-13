@@ -86,6 +86,7 @@ class DiffRec(GeneralRecommender, AutoEncoderMixin):
     Note that DiffRec simultaneously ranks all items for each user.
     We implement the the DiffRec model with only user dataloader.
     """
+
     input_type = InputType.LISTWISE
 
     def __init__(self, config, dataset):
@@ -141,9 +142,9 @@ class DiffRec(GeneralRecommender, AutoEncoderMixin):
                 self.device
             )
             if self.beta_fixed:
-                self.betas[
-                    0
-                ] = 0.00001  # Deep Unsupervised Learning using Noneequilibrium Thermodynamics 2.4.1
+                self.betas[0] = (
+                    0.00001  # Deep Unsupervised Learning using Noneequilibrium Thermodynamics 2.4.1
+                )
                 # The variance \beta_1 of the first step is fixed to a small constant to prevent overfitting.
             assert len(self.betas.shape) == 1, "betas must be 1-D"
             assert (
@@ -327,7 +328,7 @@ class DiffRec(GeneralRecommender, AutoEncoderMixin):
     def predict(self, interaction):
         item = interaction[self.ITEM_ID]
         x_t = self.full_sort_predict(interaction)
-        scores = x_t[:, item]
+        scores = x_t[torch.arange(len(item)).to(self.device), item]
         return scores
 
     def calculate_loss(self, interaction):
