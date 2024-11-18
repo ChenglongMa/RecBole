@@ -55,4 +55,4 @@ relation_kg_num_interval: "[0,inf)"     # (str) Relation interval for filtering 
 
 # Benchmark .inter file
 benchmark_filename: ['train','valid','test']
-dataset_filename: test2018                 # (str) The filename of the dataset.
+#dataset_filename: test2018                 # (str) The filename of the dataset.

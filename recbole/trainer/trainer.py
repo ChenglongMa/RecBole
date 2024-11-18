@@ -29,7 +29,7 @@ import torch
 import torch.optim as optim
 from torch.nn.utils.clip_grad import clip_grad_norm_
 from tqdm import tqdm
-import torch.cuda.amp as amp
+# import torch.cuda.amp as amp
 
 from recbole.data.utils import get_dataset_name
 from recbole.data.interaction import Interaction
@@ -236,7 +236,7 @@ class Trainer(AbstractTrainer):
         if not self.config["single_spec"] and train_data.shuffle:
             train_data.sampler.set_epoch(epoch_idx)
 
-        scaler = amp.GradScaler(enabled=self.enable_scaler)
+        scaler = torch.amp.GradScaler('cuda', enabled=self.enable_scaler)
         for batch_idx, interaction in enumerate(iter_data):
             interaction = interaction.to(self.device)
             self.optimizer.zero_grad()
@@ -589,7 +589,17 @@ class Trainer(AbstractTrainer):
                 dist.barrier()
             checkpoint_file = model_file or self.saved_model_file
             map_location = {"cuda:%d" % 0: "cuda:%d" % self.config["local_rank"]}
-            checkpoint = torch.load(checkpoint_file, map_location=map_location)
+            # WARNING:
+            # You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly.
+            # It is possible to construct malicious pickle data which will execute arbitrary code during unpickling
+            # (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details).
+            # In a future release, the default value for `weights_only` will be flipped to `True`.
+            # This limits the functions that could be executed during unpickling.
+            # Arbitrary objects will no longer be allowed to be loaded via this mode
+            # unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`.
+            # We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file.
+            # Please open an issue on GitHub for any issues related to this experimental feature.
+            checkpoint = torch.load(checkpoint_file, map_location=map_location, weights_only=False)
             self.model.load_state_dict(checkpoint["state_dict"])
             self.model.load_other_parameter(checkpoint.get("other_parameter"))
             message_output = "Loading model structure and parameters from {}".format(
@@ -1487,7 +1497,7 @@ class NCLTrainer(Trainer):
             if show_progress
             else train_data
         )
-        scaler = amp.GradScaler(enabled=self.enable_scaler)
+        scaler = torch.amp.GradScaler('cuda', enabled=self.enable_scaler)
 
         if not self.config["single_spec"] and train_data.shuffle:
             train_data.sampler.set_epoch(epoch_idx)
@@ -1500,7 +1510,7 @@ class NCLTrainer(Trainer):
                 self.set_reduce_hook()
                 sync_loss = self.sync_grad_loss()
 
-            with amp.autocast(enabled=self.enable_amp):
+            with torch.amp.autocast('cuda',enabled=self.enable_amp):
                 losses = loss_func(interaction)
 
             if isinstance(losses, tuple):

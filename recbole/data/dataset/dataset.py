@@ -505,7 +505,8 @@ class Dataset(torch.utils.data.Dataset):
             ftype = self.field2type[field]
             if not ftype.value.endswith("seq"):
                 continue
-            df[field].fillna(value="", inplace=True)
+            # df[field].fillna(value="", inplace=True)
+            df.fillna({field: ""}, inplace=True)
             if ftype == FeatureType.TOKEN_SEQ:
                 df[field] = [
                     np.array(list(filter(None, _.split(seq_separator))))
@@ -652,9 +653,11 @@ class Dataset(torch.utils.data.Dataset):
             for field in feat:
                 ftype = self.field2type[field]
                 if ftype == FeatureType.TOKEN:
-                    feat[field].fillna(value=0, inplace=True)
+                    # feat[field].fillna(value=0, inplace=True)
+                    feat.fillna({field: 0}, inplace=True)
                 elif ftype == FeatureType.FLOAT:
-                    feat[field].fillna(value=feat[field].mean(), inplace=True)
+                    # feat[field].fillna(value=feat[field].mean(), inplace=True)
+                    feat.fillna({field: feat[field].mean()}, inplace=True)
                 else:
                     dtype = np.int64 if ftype == FeatureType.TOKEN_SEQ else np.float
                     feat[field] = feat[field].apply(
@@ -1221,7 +1224,8 @@ class Dataset(torch.utils.data.Dataset):
             if ftype == FeatureType.TOKEN:
                 feat[field] = new_ids
             elif ftype == FeatureType.TOKEN_SEQ:
-                split_point = np.cumsum(feat[field].agg(len))[:-1]
+                # split_point = np.cumsum(feat[field].agg(len))[:-1]
+                split_point = np.cumsum(feat[field].transform(len))[:-1]
                 feat[field] = np.split(new_ids, split_point)
 
     def _change_feat_format(self):
