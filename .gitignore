@@ -18,3 +18,4 @@ wandb/*
 /out/
 /dataset/
 temp*
+*.bak

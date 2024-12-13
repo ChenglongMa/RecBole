@@ -732,26 +732,26 @@ class Dataset(torch.utils.data.Dataset):
             Only float-like fields can be discretized.
         """
 
-        dis_info = {}
+        if not self.config["discretization"]:
+            return
 
-        if self.config["discretization"]:
-            dis_info = self.config["discretization"]
+        dis_info = self.config["discretization"]
 
-            for field in dis_info.keys():
-                if field not in self.field2type:
-                    raise ValueError(f"Field [{field}] does not exist.")
-                if field not in self.config["numerical_features"]:
-                    raise ValueError(f"Field [{field}] must be a numerical feature")
-                ftype = self.field2type[field]
-                if ftype != FeatureType.FLOAT and ftype != FeatureType.FLOAT_SEQ:
-                    self.logger.warning(
-                        f"{field} is not a FLOAT/FLOAT_SEQ feat, which will not be normalized."
-                    )
-                    del dis_info[field]
+        for field in dis_info.keys():
+            if field not in self.field2type:
+                raise ValueError(f"Field [{field}] does not exist.")
+            if field not in self.config["numerical_features"]:
+                raise ValueError(f"Field [{field}] must be a numerical feature")
+            ftype = self.field2type[field]
+            if ftype != FeatureType.FLOAT and ftype != FeatureType.FLOAT_SEQ:
+                self.logger.warning(
+                    f"{field} is not a FLOAT/FLOAT_SEQ feat, which will not be normalized."
+                )
+                del dis_info[field]
 
-            self.logger.debug(
-                set_color("Normalized fields", "blue") + f": {dis_info.keys()}"
-            )
+        self.logger.debug(
+            set_color("Normalized fields", "blue") + f": {dis_info.keys()}"
+        )
 
         for field in self.config["numerical_features"]:
             if field in dis_info:
