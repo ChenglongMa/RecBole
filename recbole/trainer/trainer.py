@@ -638,7 +638,10 @@ class Trainer(AbstractTrainer):
             eval_dataset.iid_field,
             "score",
         )
-        phase = eval_data._sampler.phase
+        try:
+            phase = eval_data._sampler.phase
+        except AttributeError:
+            phase = None
         user_id_list = []
         # end of mcl
         if phase == "test":

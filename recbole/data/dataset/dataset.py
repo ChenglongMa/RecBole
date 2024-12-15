@@ -168,6 +168,7 @@ class Dataset(torch.utils.data.Dataset):
         self._set_label_by_threshold()
         self._normalize()
         self._discretization()
+        self._bucketing_time()  # mcl: added bucketing time
         self._preload_weight_matrix()
 
     def _data_filtering(self):
@@ -723,6 +724,40 @@ class Dataset(torch.utils.data.Dataset):
                     feat[field] = np.split(
                         norm(feat[field].agg(np.concatenate)), split_point
                     )
+
+    def _bucketing_time(self):
+        """Bucketing time if ``config['num_time_buckets']`` is set (i.e., non-zero).
+
+        Note:
+            Only time-like fields can be bucketed.
+        mcl: added bucketing time
+
+        """
+        num_time_buckets = self.config["num_time_buckets"]
+
+        if not num_time_buckets:
+            return
+
+        time_field = self.time_field
+        if time_field is None:
+            return
+
+        self.logger.debug(set_color("Bucketing time", "blue") + f": {time_field}")
+
+
+        for feat in self.field2feats(time_field):
+            time_value = feat[time_field].values
+            time_min, time_max = time_value.min(), time_value.max()
+
+            if num_time_buckets == 1:
+                time_value = np.zeros_like(time_value)
+            else:
+                time_value = np.floor(
+                    (time_value - time_min) / (time_max - time_min) * num_time_buckets
+                )
+                time_value = np.clip(time_value, 0, num_time_buckets - 1).astype(int)
+            feat[time_field] = time_value
+            self.field2type[time_field] = FeatureType.TOKEN
 
     def _discretization(self):
         """Discretization if ``config['discretization']`` is set.
