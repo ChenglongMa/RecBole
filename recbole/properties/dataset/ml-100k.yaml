@@ -3,7 +3,7 @@ field_separator: "\t"           # (str) Separator of different columns in atomic
 seq_separator: " "              # (str) Separator inside the sequence features.
 
 # Basic Information
-INDEX_FIELD: idx                  # (str) Field name of the index feature.  # TODO: remove this in the future
+INDEX_FIELD: inter_id                  # (str) Field name of the index feature.  # TODO: remove this in the future
 USER_ID_FIELD: user_id          # (str) Field name of user ID feature.
 ITEM_ID_FIELD: item_id          # (str) Field name of item ID feature.
 RATING_FIELD: rating            # (str) Field name of rating feature.
@@ -30,8 +30,7 @@ relation_kg_num_interval: ~     # (str) Relation interval for filtering kg, such
 
 # Selectively Loading
 load_col:                       # (dict) The suffix of atomic files: (list) field names to be loaded.
-    inter: [idx, user_id, item_id, rating, timestamp]  # TODO: idx should be removed
-#    inter: [user_id, item_id, rating, timestamp]
+    inter: [user_id, item_id, rating, timestamp]
 unload_col: ~                   # (dict) The suffix of atomic files: (list) field names NOT to be loaded.
 unused_col: ~                   # (dict) The suffix of atomic files: (list) field names which are loaded but not used.
 
@@ -50,6 +49,8 @@ alias_of_relation_id: ~         # (list) Fields' names remapped into the same in
 preload_weight: ~               # (dict) Preloaded weight in {IDs (token): pretrained vectors (float-like)}.
 normalize_field: ['rating']              # (list) List of filed names to be normalized.
 normalize_all: False            # (bool) Whether or not to normalize all the float like fields.
+#un_remapped_fields: ~           # (list) List of field names to be un-remapped.
+un_remapped_fields: ["inter_id"]                  # (list) List of field names to be un-remapped.
 #numerical_features: ['timestamp']
 #discretization:
 #    timestamp:

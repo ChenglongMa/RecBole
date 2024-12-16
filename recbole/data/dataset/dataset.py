@@ -393,7 +393,7 @@ class Dataset(torch.utils.data.Dataset):
                 raise ValueError(f"Additional feature file [{feat_path}] not found.")
             setattr(self, f"{suf}_feat", feat)
 
-    def _get_load_and_unload_col(self, source):
+    def _get_load_and_unload_col(self, source) -> tuple[set, set]:
         """Parsing ``config['load_col']`` and ``config['unload_col']`` according to source.
         See :doc:`../user_guide/config/data_settings` for detail arg setting.
 
@@ -466,7 +466,20 @@ class Dataset(torch.utils.data.Dataset):
         encoding = self.config["encoding"]
         with open(filepath, "r", encoding=encoding) as f:
             head = f.readline()[:-1]
-        for field_type in head.split(field_separator):
+
+        field_settings = head.split(field_separator)
+        # mcl: process index column
+        index_field = self.config["INDEX_FIELD"]
+        index_field_type = f"{index_field}:token"
+        has_index = index_field_type in field_settings  # index column exists in the file
+        if index_field is not None and not has_index:
+            # when index_field is set but not in the file, add it to the field_settings
+            field_settings.append(index_field_type)
+            if load_col is not None:
+                load_col.add(index_field)
+        # mcl: end
+
+        for field_type in field_settings:
             field, ftype = field_type.split(":")
             try:
                 ftype = FeatureType(ftype)
@@ -483,9 +496,11 @@ class Dataset(torch.utils.data.Dataset):
                     self.field2seqlen[field] = 1
                 if "float" in ftype.value:
                     self.field2bucketnum[field] = 2
-            columns.append(field)
-            usecols.append(field_type)
-            dtype[field_type] = np.float64 if ftype == FeatureType.FLOAT else str
+            if has_index or field != index_field:
+                # mcl: skip the index column if it is not in the file
+                columns.append(field)
+                usecols.append(field_type)
+                dtype[field_type] = np.float64 if ftype == FeatureType.FLOAT else str
 
         if len(columns) == 0:
             self.logger.warning(f"No columns has been loaded from [{source}]")
@@ -500,6 +515,10 @@ class Dataset(torch.utils.data.Dataset):
             engine="python",
         )
         df.columns = columns
+
+        if not has_index:
+            # mcl: added index column if it is not in the file
+            df = df.reset_index(names=index_field)
 
         seq_separator = self.config["seq_separator"]
         for field in columns:
@@ -1201,7 +1220,10 @@ class Dataset(torch.utils.data.Dataset):
         """
 
         remap_list = []
+        un_remapped_fields = self.config["un_remapped_fields"] or []
         for field in field_list:
+            if field in un_remapped_fields:
+                continue
             ftype = self.field2type[field]
             for feat in self.field2feats(field):
                 remap_list.append((feat, field, ftype))
